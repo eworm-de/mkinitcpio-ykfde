@@ -1,0 +1,91 @@
+#!/bin/sh
+
+function help() {
+	echo "usage: ${0} [OPTIONS]"
+	echo
+	echo "where OPTIONS are:"
+	echo " -1         use Yubico key slot 1"
+	echo " -2         use Yubico key slot 2"
+	echo " -d DEVICE  add key to device DEVICE"
+	echo " -h         show this help"
+	echo " -k         keep challenge, just add a new slot"
+}
+
+DIR="/tmp/.ykfde-${$}/"
+PASS=""
+SLOT="1"
+KEEP="0"
+
+while getopts "12d:hk" opt; do
+	case ${opt} in
+		1)
+			SLOT="1"
+			;;
+		2)
+			SLOT="2"
+			echo "Do not forget to add 'ykfde_slot=2' to your boot parameters!"
+			;;
+		d)
+			DEVICE="${OPTARG}"
+			;;
+		h)
+			help
+			exit 0
+			;;
+		k)
+			KEEP="1"
+			;;
+	esac
+done
+
+if [ -z "${DEVICE}" ]; then
+	echo "No device given." >&2
+	help
+	exit 1
+elif [ ! -b "${DEVICE}" ]; then
+	echo "Device '${DEVICE}' does not exist or is not a block device." >&2
+	exit 1
+elif ! cryptsetup isLuks "${DEVICE}" 2>/dev/null; then
+	echo "Device '${DEVICE}' does not exist." >&2
+	exit 1
+fi
+
+install -d -m0700 "${DIR}"
+echo "Please give extra password if you want to activate two factor"
+echo -n "authentication, just ENTER for none: "
+stty -echo
+read PASS
+stty echo
+echo
+
+if [ -n "${PASS}" ]; then
+	echo "Do not forget to add 'ykfde_twofactor=y' to your boot parameters!"
+fi
+
+# generate challenge
+if [ "${KEEP}" = "1" ] && [ -s "/etc/ykfde-challenge" ]; then
+	echo "User requested to keep challenge, not generating a new one."
+	ln -s "/etc/ykfde-challenge" "${DIR}/ykfde-challenge"
+else
+	makepasswd --chars=$((64-${#PASS})) | tr -d '\n' > "${DIR}/ykfde-challenge"
+fi
+
+# generate response and add key to LUKS device
+if ! ykchalresp -${SLOT} "${PASS}$(cat ${DIR}/ykfde-challenge)" > "${DIR}/ykfde-response"; then
+	# ykchalresp should have shouted, so do not complain here
+	exit 1
+fi
+if ! cryptsetup luksAddKey "${DEVICE}" "${DIR}/ykfde-response"; then
+	# cryptsetup should have shouted, ...
+	exit 1
+fi
+
+# shred response and install challenge
+shred --remove "${DIR}/ykfde-response"
+if [ "${KEEP}" != "1" ] && [ -s "${DIR}/ykfde-challenge" ] && [ ! -L "${DIR}/ykfde-challenge" ]; then
+	install -D -m 0400 "${DIR}/ykfde-challenge" "/etc/ykfde-challenge"
+fi
+rm -rf "${DIR}"
+
+echo "Please do not forget to remove old keys when changing challenge!"
+echo "Now run 'mkinitcpio' to build a new initramfs!"

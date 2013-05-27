@@ -1,0 +1,13 @@
+#!/bin/sh
+
+build() {
+	add_runscript
+	add_binary ykchalresp
+	add_file /etc/ykfde-challenge /
+	add_module 'usbhid'
+}
+
+help() {
+	echo "This hook adds support for opening LUKS devices with Yubico key."
+	echo "Please use command 'ykfde' to prepare."
+}
