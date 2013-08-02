@@ -11,7 +11,7 @@ function help() {
 	echo " -k         keep challenge, just add a new slot"
 }
 
-DIR="/tmp/.ykfde-${$}/"
+TMPDIR="$(mktemp --tmp-dir=/tmp/ .$(basename ${0})-${$}-XXXXXX)"
 PASS=""
 SLOT="1"
 KEEP="0"
@@ -50,7 +50,6 @@ elif ! cryptsetup isLuks "${DEVICE}" 2>/dev/null; then
 	exit 1
 fi
 
-install -d -m0700 "${DIR}"
 echo "Please give extra password if you want to activate two factor"
 echo -n "authentication, just ENTER for none: "
 stty -echo
@@ -65,27 +64,27 @@ fi
 # generate challenge
 if [ "${KEEP}" = "1" ] && [ -s "/etc/ykfde-challenge" ]; then
 	echo "User requested to keep challenge, not generating a new one."
-	ln -s "/etc/ykfde-challenge" "${DIR}/ykfde-challenge"
+	ln -s "/etc/ykfde-challenge" "${TMPDIR}/ykfde-challenge"
 else
-	makepasswd --chars=$((64-${#PASS})) | tr -d '\n' > "${DIR}/ykfde-challenge"
+	makepasswd --chars=$((64-${#PASS})) | tr -d '\n' > "${TMPDIR}/ykfde-challenge"
 fi
 
 # generate response and add key to LUKS device
-if ! ykchalresp -${SLOT} "${PASS}$(cat ${DIR}/ykfde-challenge)" > "${DIR}/ykfde-response"; then
+if ! ykchalresp -${SLOT} "${PASS}$(cat ${TMPDIR}/ykfde-challenge)" > "${TMPDIR}/ykfde-response"; then
 	# ykchalresp should have shouted, so do not complain here
 	exit 1
 fi
-if ! cryptsetup luksAddKey "${DEVICE}" "${DIR}/ykfde-response"; then
+if ! cryptsetup luksAddKey "${DEVICE}" "${TMPDIR}/ykfde-response"; then
 	# cryptsetup should have shouted, ...
 	exit 1
 fi
 
 # shred response and install challenge
-shred --remove "${DIR}/ykfde-response"
-if [ "${KEEP}" != "1" ] && [ -s "${DIR}/ykfde-challenge" ] && [ ! -L "${DIR}/ykfde-challenge" ]; then
-	install -D -m 0400 "${DIR}/ykfde-challenge" "/etc/ykfde-challenge"
+shred --remove "${TMPDIR}/ykfde-response"
+if [ "${KEEP}" != "1" ] && [ -s "${TMPDIR}/ykfde-challenge" ] && [ ! -L "${TMPDIR}/ykfde-challenge" ]; then
+	install -D -m 0400 "${TMPDIR}/ykfde-challenge" "/etc/ykfde-challenge"
 fi
-rm -rf "${DIR}"
+rm -rf "${TMPDIR}"
 
 echo "Please do not forget to remove old keys when changing challenge!"
 echo "Now run 'mkinitcpio' to build a new initramfs!"
