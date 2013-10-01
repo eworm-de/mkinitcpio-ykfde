@@ -13,7 +13,7 @@ function help() {
 	echo " -k         keep challenge, just add a new slot"
 }
 
-TMPDIR="$(mktemp --tmpdir=/tmp/ .$(basename ${0})-${$}-XXXXXX)"
+TMPDIR="$(mktemp --directory --tmpdir=/tmp/ .$(basename ${0})-${$}-XXXXXX)"
 PASS=""
 SLOT="2"
 KEEP="0"
