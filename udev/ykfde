@@ -10,6 +10,6 @@ source /etc/ykfde.conf
 ykchalresp -${YKFDE_SLOT:-2} "$(cat /ykfde-challenge)" 2>/dev/null | tr -d '\n' > /crypto_keyfile.bin
 
 # if the systemd unit was faster try to answer password agent
-for REQUEST in $(grep -l '^Message=Please give passphrase for disk' /run/systemd/ask-password/ask.*); do
+for REQUEST in $(grep -l '^Message=Please enter passphrase for disk' /run/systemd/ask-password/ask.*); do
 	/usr/lib/systemd/systemd-reply-password 1 $(grep '^Socket=' ${REQUEST} | cut -d= -f2) < /crypto_keyfile.bin
 done
