@@ -2,6 +2,7 @@
 
 build() {
 	add_binary ykchalresp
+	add_binary tr
 	add_binary /usr/lib/udev/ykfde
 	add_binary /usr/lib/systemd/systemd-reply-password
 	add_file /usr/lib/initcpio/udev/20-ykfde.rules /usr/lib/udev/rules.d/20-ykfde.rules
