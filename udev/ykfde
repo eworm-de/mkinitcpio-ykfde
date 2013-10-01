@@ -6,4 +6,10 @@ source /etc/ykfde.conf
 # yet another add event. Ignore if the file exists.
 [ -s /crypto_keyfile.bin ] && exit 0
 
-ykchalresp -${YKFDE_SLOT:-2} "$(cat /ykfde-challenge)" > /crypto_keyfile.bin 2>/dev/null
+# write the response to keyfile
+ykchalresp -${YKFDE_SLOT:-2} "$(cat /ykfde-challenge)" | tr -d '\n' > /crypto_keyfile.bin 2>/dev/null
+
+# if the systemd unit was faster try to answer password agent
+for REQUEST in $(grep -l '^Message=Please give passphrase for disk' /run/systemd/ask-password/ask.*); do
+	/usr/lib/systemd/systemd-reply-password 1 $(grep '^Socket=' ${REQUEST} | cut -d= -f2) < /crypto_keyfile.bin
+done

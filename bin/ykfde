@@ -75,7 +75,7 @@ else
 fi
 
 # generate response and add key to LUKS device
-if ! ykchalresp -${SLOT} "${PASS}$(cat ${TMPDIR}/ykfde-challenge)" > "${TMPDIR}/ykfde-response"; then
+if ! ykchalresp -${SLOT} "${PASS}$(cat ${TMPDIR}/ykfde-challenge)" | tr -d '\n' > "${TMPDIR}/ykfde-response"; then
 	# ykchalresp should have shouted, so do not complain here
 	exit 1
 fi
