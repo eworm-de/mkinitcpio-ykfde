@@ -7,7 +7,7 @@ source /etc/ykfde.conf
 [ -s /crypto_keyfile.bin ] && exit 0
 
 # write the response to keyfile
-ykchalresp -${YKFDE_SLOT:-2} "$(cat /ykfde-challenge)" | tr -d '\n' > /crypto_keyfile.bin 2>/dev/null
+ykchalresp -${YKFDE_SLOT:-2} "$(cat /ykfde-challenge)" 2>/dev/null | tr -d '\n' > /crypto_keyfile.bin
 
 # if the systemd unit was faster try to answer password agent
 for REQUEST in $(grep -l '^Message=Please give passphrase for disk' /run/systemd/ask-password/ask.*); do
