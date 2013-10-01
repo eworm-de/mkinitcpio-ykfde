@@ -1,5 +1,7 @@
 #!/bin/sh
 
+source /etc/ykfde.conf
+
 function help() {
 	echo "usage: ${0} [OPTIONS]"
 	echo
@@ -20,11 +22,9 @@ while getopts "12d:hk" opt; do
 	case ${opt} in
 		1)
 			SLOT="1"
-			echo "Please update /etc/ykfde.conf if needed!"
 			;;
 		2)
 			SLOT="2"
-			echo "Please update /etc/ykfde.conf if needed!"
 			;;
 		d)
 			DEVICE="${OPTARG}"
@@ -49,6 +49,10 @@ elif [ ! -b "${DEVICE}" ]; then
 elif ! cryptsetup isLuks "${DEVICE}" 2>/dev/null; then
 	echo "Device '${DEVICE}' does not exist." >&2
 	exit 1
+fi
+
+if [ "${YKFDE_SLOT}" != "${SLOT}" ]; then
+	echo "Please update /etc/ykfde.conf to match your slot!"
 fi
 
 echo "Please give extra password if you want to activate two factor"
