@@ -1,0 +1,4 @@
+# do challenge response with Yubikey II and try to answer
+# password agent
+ACTION=="add", ATTRS{idVendor}=="1050", ATTRS{idProduct}=="0010|0110|0111", \
+	RUN+="/usr/lib/udev/ykfde"

@@ -5,7 +5,7 @@ function help() {
 	echo
 	echo "where OPTIONS are:"
 	echo " -1         use Yubico key slot 1"
-	echo " -2         use Yubico key slot 2"
+	echo " -2         use Yubico key slot 2 (default)"
 	echo " -d DEVICE  add key to device DEVICE"
 	echo " -h         show this help"
 	echo " -k         keep challenge, just add a new slot"
@@ -13,17 +13,18 @@ function help() {
 
 TMPDIR="$(mktemp --tmpdir=/tmp/ .$(basename ${0})-${$}-XXXXXX)"
 PASS=""
-SLOT="1"
+SLOT="2"
 KEEP="0"
 
 while getopts "12d:hk" opt; do
 	case ${opt} in
 		1)
 			SLOT="1"
+			echo "Please update /etc/ykfde.conf if needed!"
 			;;
 		2)
 			SLOT="2"
-			echo "Do not forget to add 'ykfde_slot=2' to your boot parameters!"
+			echo "Please update /etc/ykfde.conf if needed!"
 			;;
 		d)
 			DEVICE="${OPTARG}"

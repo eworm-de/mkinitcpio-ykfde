@@ -1,0 +1,9 @@
+#!/bin/sh
+
+source /etc/ykfde.conf
+
+# Looks like Yubikey is reset after challenge response, triggering
+# yet another add event. Ignore if the file exists.
+[ -s /crypto_keyfile.bin ] && exit 0
+
+ykchalresp -${YKFDE_SLOT:-2} "$(cat /ykfde-challenge)" > /crypto_keyfile.bin 2>/dev/null

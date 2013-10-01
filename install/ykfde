@@ -1,8 +1,10 @@
 #!/bin/sh
 
 build() {
-	add_runscript
 	add_binary ykchalresp
+	add_binary /usr/lib/udev/ykfde
+	add_file /usr/lib/initcpio/udev/20-ykfde.rules /usr/lib/udev/rules.d/20-ykfde.rules
+	add_file /etc/ykfde.conf
 	add_file /etc/ykfde-challenge /
 	add_module 'usbhid'
 }
