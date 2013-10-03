@@ -11,6 +11,6 @@ ykchalresp -${YKFDE_SLOT:-2} "$(cat /ykfde-challenge)" 2>/dev/null | tr -d '\n' 
 
 # if the systemd unit was faster try to answer password agent
 for REQUEST in $(grep -l '^Message=Please enter passphrase for disk' /run/systemd/ask-password/ask.* || \
-		inotifywait /run/systemd/ask-password/ 2>/dev/null | awk '{ print $1 $3 }'); do
+		inotifywait -q --format %w%f -e MOVED_TO /run/systemd/ask-password/); do
 	/usr/lib/systemd/systemd-reply-password 1 $(grep '^Socket=' ${REQUEST} | cut -d= -f2) < /crypto_keyfile.bin
 done
