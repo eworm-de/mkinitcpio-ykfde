@@ -1,3 +1,4 @@
+# commands
 INSTALL := install
 
 all: udev/ykfde
