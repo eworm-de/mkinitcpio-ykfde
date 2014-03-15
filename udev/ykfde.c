@@ -142,8 +142,10 @@ int main(int argc, char **argv) {
 		goto out30;
 	}
 	challenge[fsize] = 0;
+	/* finished challenge */
 
-	/* try to read config file */
+	/* try to read config file
+	 * if anything here fails we do not care... slot 2 is the default */
 	if ((ini = iniparser_load(CONFIGFILE)) != NULL) {
 		slot = iniparser_getint(ini, "general:Slot", slot);
 
@@ -159,6 +161,7 @@ int main(int argc, char **argv) {
 		iniparser_freedict(ini);
 	}
 
+	/* init and open Yubikey */
 	if (!yk_init()) {
 		perror("yk_init() failed");
 		goto out30;
@@ -171,6 +174,7 @@ int main(int argc, char **argv) {
 
 	memset(response, 0, sizeof(response));
 
+	/* do challenge/response and encode to hex */
 	if (!yk_challenge_response(yk, slot, 0, strlen(challenge), (unsigned char *)challenge, sizeof(response), response)) {
 		perror("yk_challenge_response() failed");
 		goto out50;
@@ -179,7 +183,7 @@ int main(int argc, char **argv) {
 
 	sprintf(response_askpass, "+%s", response_hex);
 
-	/* change to directory so we do not have to assemble complete path */
+	/* change to directory so we do not have to assemble complete/absolute path */
 	if (chdir(ASK_PATH) != 0) {
 		perror("chdir() failed");
 		goto out50;
@@ -213,7 +217,8 @@ int main(int argc, char **argv) {
 		goto out70;
 	}
 
-	/*actually read return the list of change events happens. Here, read the change event one by one and process it accordingly.*/
+	/* actually read return the list of change events happens.
+	 * Here, read the change event one by one and process it accordingly. */
 	while (i < length) {
 		event = (struct inotify_event *)&buffer[i];
 		if (event->len > 0)
@@ -223,29 +228,36 @@ int main(int argc, char **argv) {
 	}
 
 out70:
+	/* remove inotify watch and remove file handle */
 	inotify_rm_watch(fd_inotify, watch);
 	close(fd_inotify);
 
 out60:
+	/* close dir */
 	closedir(dir);
 
 out50:
+	/* wipe response (cleartext password!) from memory */
 	memset(response, 0, sizeof(response));
 	memset(response_hex, 0, sizeof(response_hex));
 	memset(response_askpass, 0, sizeof(response_askpass));
 
+	/* close Yubikey */
 	if (!yk_close_key(yk))
 		perror("yk_close_key() failed");
 
 out40:
+	/* release Yubikey */
 	if (!yk_release())
 		perror("yk_release() failed");
 
 out30:
-	if (challenge != NULL)
-		free(challenge);
+	/* free challenge */
+	free(challenge);
 
 out20:
+	/* close and unlink challenge file
+	 * we can not try again later! */
 	fclose(challengefile);
 	unlink(CHALLENGEFILE);
 
