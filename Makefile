@@ -3,7 +3,7 @@ INSTALL := install
 
 all: udev/ykfde
 
-udev/ykfde:
+udev/ykfde: udev/ykfde.c
 	$(MAKE) -C udev
 
 install: udev/ykfde
