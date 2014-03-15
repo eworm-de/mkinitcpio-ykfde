@@ -119,6 +119,9 @@ int main(int argc, char **argv) {
 	int fd_inotify, watch, length, i = 0;
 	char buffer[EVENT_BUF_LEN];
 
+	/* reopening stderr to /dev/console may help debugging... */
+	/* freopen("/dev/console", "w", stderr); */
+
 	/* check if challenge file exists */
 	if (access(CHALLENGEFILE, R_OK) == -1)
 		goto out10;
