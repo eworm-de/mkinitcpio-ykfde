@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
 	/* Yubikey */
 	YK_KEY * yk;
 	uint8_t slot = SLOT_CHAL_HMAC2;
-	unsigned char response[64];
+	unsigned char response[SHA1_MAX_BLOCK_SIZE];
 	unsigned char response_hex[(SHA1_MAX_BLOCK_SIZE * 2) + 1];
 	char response_askpass[(SHA1_MAX_BLOCK_SIZE * 2) + 2];
 	/* iniparser */
@@ -230,6 +230,10 @@ out60:
 	closedir(dir);
 
 out50:
+	memset(response, 0, sizeof(response));
+	memset(response_hex, 0, sizeof(response_hex));
+	memset(response_askpass, 0, sizeof(response_askpass));
+
 	if (!yk_close_key(yk))
 		perror("yk_close_key() failed");
 
