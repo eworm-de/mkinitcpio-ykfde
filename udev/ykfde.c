@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
 	memset(response_hex, 0, sizeof(response_hex));
 
 	/* do challenge/response and encode to hex */
-	if (!yk_challenge_response(yk, slot, 0, strlen(challenge), (unsigned char *)challenge, sizeof(response), response)) {
+	if (!yk_challenge_response(yk, slot, true, strlen(challenge), (unsigned char *)challenge, sizeof(response), response)) {
 		perror("yk_challenge_response() failed");
 		goto out50;
 	}
