@@ -189,27 +189,27 @@ int main(int argc, char **argv) {
 		goto out50;
 	}
 
-	/* is the request already there? */
+	/* creating the INOTIFY instance and add ASK_PATH directory into watch list */
+	if ((fd_inotify = inotify_init()) < 0) {
+		perror("inotify_init() failed");
+		goto out50;
+	}
+
+	watch = inotify_add_watch(fd_inotify, ASK_PATH, IN_MOVED_TO);
+
+	/* Is the request already there?
+	 * We do this AFTER setting up the inotify watch. This way we do not have race condition. */
 	if ((dir = opendir(ASK_PATH)) != NULL) {
 		while ((ent = readdir(dir)) != NULL) {
 			if (strncmp(ent->d_name, "ask.", 4) == 0) {
 				if ((ret = try_answer(ent->d_name, response_askpass)) == EXIT_SUCCESS)
-					goto out60;
+					goto out70;
 			}
 		}
 	} else {
 		perror ("opendir() failed");
-		goto out50;
-	}
-
-	/* creating the INOTIFY instance */
-	if ((fd_inotify = inotify_init()) < 0) {
-		perror("inotify_init() failed");
 		goto out60;
 	}
-
-	/* adding ASK_PATH directory into watch list */
-	watch = inotify_add_watch(fd_inotify, ASK_PATH, IN_MOVED_TO);
 
 	/* read to determine the event change happens. Actually this read blocks until the change event occurs */
 	if ((length = read(fd_inotify, buffer, EVENT_BUF_LEN)) < 0) {
@@ -228,13 +228,13 @@ int main(int argc, char **argv) {
 	}
 
 out70:
+	/* close dir */
+	closedir(dir);
+
+out60:
 	/* remove inotify watch and remove file handle */
 	inotify_rm_watch(fd_inotify, watch);
 	close(fd_inotify);
-
-out60:
-	/* close dir */
-	closedir(dir);
 
 out50:
 	/* wipe response (cleartext password!) from memory */
