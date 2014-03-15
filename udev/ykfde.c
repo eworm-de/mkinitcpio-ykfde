@@ -256,10 +256,11 @@ out30:
 	free(challenge);
 
 out20:
-	/* close and unlink challenge file
-	 * we can not try again later! */
+	/* close the challenge file */
 	fclose(challengefile);
-	unlink(CHALLENGEFILE);
+	/* Unlink it if we were successful, we can not try again later! */
+	if (ret == EXIT_SUCCESS)
+		unlink(CHALLENGEFILE);
 
 out10:
 	return ret;
