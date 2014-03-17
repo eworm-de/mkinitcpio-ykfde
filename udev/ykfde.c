@@ -5,7 +5,7 @@
  * of the GNU General Public License, incorporated herein by reference.
  *
  * compile with:
- * $ gcc -o yk_test yk_test.c -lykpers-1 -lyubikey -liniparser
+ * $ gcc -o ykfde ykfde.c -lykpers-1 -lyubikey -liniparser
  *
  * test woth:
  * $ systemd-ask-password --no-tty "Please enter passphrase for disk foobar..."
