@@ -102,11 +102,13 @@ int main(int argc, char **argv) {
 	/* Yubikey */
 	YK_KEY * yk;
 	uint8_t slot = SLOT_CHAL_HMAC2;
+	unsigned int serial = 0;
 	unsigned char response[SHA1_MAX_BLOCK_SIZE];
 	unsigned char response_hex[(SHA1_MAX_BLOCK_SIZE * 2) + 1];
 	char response_askpass[(SHA1_MAX_BLOCK_SIZE * 2) + 2];
 	/* iniparser */
 	dictionary * ini;
+	char section_serial[10 /* unsigned int in char */ + 5 /* ":Slot" */ + 1];
 	/* read challenge */
 	size_t fsize;
 	char * challenge;
@@ -147,10 +149,33 @@ int main(int argc, char **argv) {
 	challenge[fsize] = 0;
 	/* finished challenge */
 
+	/* init and open Yubikey */
+	if (!yk_init()) {
+		perror("yk_init() failed");
+		goto out30;
+	}
+
+	if ((yk = yk_open_first_key()) == NULL) {
+		perror("yk_open_first_key() failed");
+		goto out40;
+	}
+
+	/* read the serial number from key */
+	if(!yk_get_serial(yk, 0, 0, &serial)) {
+		perror("yk_get_serial() failed");
+		goto out40;
+	}
+
 	/* try to read config file
 	 * if anything here fails we do not care... slot 2 is the default */
 	if ((ini = iniparser_load(CONFIGFILE)) != NULL) {
+		/* first try the general setting */
 		slot = iniparser_getint(ini, "general:Slot", slot);
+
+		sprintf(section_serial, "%d:Slot", serial);
+
+		/* then probe for setting with serial number */
+		slot = iniparser_getint(ini, section_serial, slot);
 
 		switch (slot) {
 			case '1':
@@ -162,17 +187,6 @@ int main(int argc, char **argv) {
 		}
 
 		iniparser_freedict(ini);
-	}
-
-	/* init and open Yubikey */
-	if (!yk_init()) {
-		perror("yk_init() failed");
-		goto out30;
-	}
-
-	if ((yk = yk_open_first_key()) == NULL) {
-		perror("yk_open_first_key() failed");
-		goto out40;
 	}
 
 	memset(response, 0, sizeof(response));
