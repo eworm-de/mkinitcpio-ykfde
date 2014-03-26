@@ -1,7 +1,5 @@
 #!/bin/sh
 
-source /etc/ykfde.conf
-
 function help() {
 	echo "usage: ${0} [OPTIONS]"
 	echo
