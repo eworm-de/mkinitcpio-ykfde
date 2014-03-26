@@ -11,8 +11,10 @@ Requirements
 
 To compile and use yubico full disk encryption you need:
 
+* [yubikey-personalization](https://github.com/Yubico/yubikey-personalization)
 * [iniparser](http://ndevilla.free.fr/iniparser/)
 * [systemd](http://www.freedesktop.org/wiki/Software/systemd/)
+* [cryptsetup](http://code.google.com/p/cryptsetup/)
 * [mkinitcpio](https://projects.archlinux.org/mkinitcpio.git/) (Though
   it may be easy to port this to any initramfs that uses systemd)
 * [markdown](http://daringfireball.net/projects/markdown/) (HTML documentation)
