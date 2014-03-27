@@ -4,7 +4,7 @@ mkinitcpio-ykfde
 **Full disk encryption with Yubikey (Yubico key)**
 
 This allows to automatically unlock a LUKS encrypted hard disk from `systemd`-
-enabled initramdfs.
+enabled initramfs.
 
 Requirements
 ------------
@@ -33,7 +33,7 @@ followed by:
 
 > make install
 
-This will place file to their desired places in filesystem.
+This will place files to their desired places in filesystem.
 
 Usage
 -----
