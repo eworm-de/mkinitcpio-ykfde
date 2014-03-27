@@ -49,3 +49,14 @@ list in `/etc/mkinitcpio.conf` and rebuild your initramfs with:
 > mkinitcpio -p linux
 
 Reboot and have fun!
+
+Limitation / TODO
+-----------------
+
+* At the moment this is specific to Arch Linux. Though everything should
+  run with upstream `systemd` just fine anybody has to hook things up with
+  [dracut](https://dracut.wiki.kernel.org/) or whatever.
+* The challenge is not updated. The file is accessible read only in
+  initramfs, but we have no easy way to write it to persistant storage.
+  So probably this is a design limitation...
+
