@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
 	char response_askpass[(SHA1_MAX_BLOCK_SIZE * 2) + 2];
 	/* iniparser */
 	dictionary * ini;
-	char section_serial[10 /* unsigned int in char */ + 5 /* ":Slot" */ + 1];
+	char section_serial[10 /* unsigned int in char */ + 5 /* ":slot" */ + 1];
 	/* read challenge */
 	size_t fsize;
 	char * challenge;
@@ -170,9 +170,9 @@ int main(int argc, char **argv) {
 	 * if anything here fails we do not care... slot 2 is the default */
 	if ((ini = iniparser_load(CONFIGFILE)) != NULL) {
 		/* first try the general setting */
-		slot = iniparser_getint(ini, "general:Slot", slot);
+		slot = iniparser_getint(ini, "general:slot", slot);
 
-		sprintf(section_serial, "%d:Slot", serial);
+		sprintf(section_serial, "%d:slot", serial);
 
 		/* then probe for setting with serial number */
 		slot = iniparser_getint(ini, section_serial, slot);
