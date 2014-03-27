@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
 		goto out30;
 	}
 	challenge[fsize] = 0;
-	/* finished challenge */
+	/* finished reading challenge */
 
 	/* init and open Yubikey */
 	if (!yk_init()) {
