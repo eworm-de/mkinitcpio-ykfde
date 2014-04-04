@@ -31,5 +31,5 @@ clean:
 	$(RM) -f README.html
 
 release:
-	git archive --format=tar.xz --prefix=mkinicpio-ykfde-$(VERSION)/ $(VERSION) > mkinitcpio-ykfde-$(VERSION).tar.xz
+	git archive --format=tar.xz --prefix=mkinitcpio-ykfde-$(VERSION)/ $(VERSION) > mkinitcpio-ykfde-$(VERSION).tar.xz
 	gpg -ab mkinitcpio-ykfde-$(VERSION).tar.xz
