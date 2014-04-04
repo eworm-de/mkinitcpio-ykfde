@@ -2,6 +2,9 @@
 INSTALL := install
 MD	:= markdown
 RM	:= rm
+# this is just a fallback in case you do not use git but downloaded
+# # a release tarball...
+# VERSION := 0.3.0
 
 all: udev/ykfde README.html
 
@@ -26,3 +29,7 @@ install-doc: README.md README.html
 clean:
 	$(MAKE) -C udev clean
 	$(RM) -f README.html
+
+release:
+	git archive --format=tar.xz --prefix=mkinicpio-ykfde-$(VERSION)/ $(VERSION) > mkinitcpio-ykfde-$(VERSION).tar.xz
+	gpg -ab mkinitcpio-ykfde-$(VERSION).tar.xz
