@@ -40,7 +40,7 @@
 #define ASK_MESSAGE	"Please enter passphrase for disk"
 
 #define	CONFIGFILE	"/etc/ykfde.conf"
-#define CHALLENGEFILE	"/ykfde-challenge"
+#define CHALLENGEDIR	"/etc/ykfde.d/"
 
 static int send_on_socket(int fd, const char *socket_name, const void *packet, size_t size) {
         union {
@@ -112,6 +112,7 @@ int main(int argc, char **argv) {
 	/* read challenge */
 	size_t fsize;
 	char * challenge;
+	char challengefilename[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 1];
         FILE * challengefile;
 	/* read dir */
 	DIR * dir;
@@ -124,14 +125,33 @@ int main(int argc, char **argv) {
 	/* reopening stderr to /dev/console may help debugging... */
 	/* freopen("/dev/console", "w", stderr); */
 
-	/* check if challenge file exists */
-	if (access(CHALLENGEFILE, R_OK) == -1)
+	/* init and open first Yubikey */
+	if (!yk_init()) {
+		perror("yk_init() failed");
 		goto out10;
+	}
+
+	if ((yk = yk_open_first_key()) == NULL) {
+		perror("yk_open_first_key() failed");
+		goto out20;
+	}
+
+	/* read the serial number from key */
+	if(!yk_get_serial(yk, 0, 0, &serial)) {
+		perror("yk_get_serial() failed");
+		goto out30;
+	}
+
+	sprintf(challengefilename, CHALLENGEDIR "/challenge-%d", serial);
+
+	/* check if challenge file exists */
+	if (access(challengefilename, R_OK) == -1)
+		goto out30;
 
 	/* read challenge from file */
-	if ((challengefile = fopen(CHALLENGEFILE, "r")) == NULL) {
+	if ((challengefile = fopen(challengefilename, "r")) == NULL) {
 		perror("Failed opening challenge file for reading");
-		goto out10;
+		goto out30;
 	}
 	fseek(challengefile, 0, SEEK_END);
 	fsize = ftell(challengefile);
@@ -139,32 +159,15 @@ int main(int argc, char **argv) {
 
 	if ((challenge = malloc(fsize + 1)) == NULL) {
 		perror("malloc() failed");
-		goto out20;
+		goto out40;
 	}
 
 	if ((fread(challenge, fsize, 1, challengefile)) != 1) {
 		perror("Failed reading challenge from file");
-		goto out30;
+		goto out50;
 	}
 	challenge[fsize] = 0;
 	/* finished reading challenge */
-
-	/* init and open Yubikey */
-	if (!yk_init()) {
-		perror("yk_init() failed");
-		goto out30;
-	}
-
-	if ((yk = yk_open_first_key()) == NULL) {
-		perror("yk_open_first_key() failed");
-		goto out40;
-	}
-
-	/* read the serial number from key */
-	if(!yk_get_serial(yk, 0, 0, &serial)) {
-		perror("yk_get_serial() failed");
-		goto out40;
-	}
 
 	/* try to read config file
 	 * if anything here fails we do not care... slot 2 is the default */
@@ -255,6 +258,17 @@ out60:
 	close(fd_inotify);
 
 out50:
+	/* free challenge */
+	free(challenge);
+
+out40:
+	/* close the challenge file */
+	fclose(challengefile);
+	/* Unlink it if we were successful, we can not try again later! */
+	if (ret == EXIT_SUCCESS)
+		unlink(challengefilename);
+
+out30:
 	/* wipe response (cleartext password!) from memory */
 	memset(response, 0, sizeof(response));
 	memset(response_hex, 0, sizeof(response_hex));
@@ -264,21 +278,10 @@ out50:
 	if (!yk_close_key(yk))
 		perror("yk_close_key() failed");
 
-out40:
+out20:
 	/* release Yubikey */
 	if (!yk_release())
 		perror("yk_release() failed");
-
-out30:
-	/* free challenge */
-	free(challenge);
-
-out20:
-	/* close the challenge file */
-	fclose(challengefile);
-	/* Unlink it if we were successful, we can not try again later! */
-	if (ret == EXIT_SUCCESS)
-		unlink(CHALLENGEFILE);
 
 out10:
 	return ret;

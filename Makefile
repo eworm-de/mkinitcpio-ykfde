@@ -21,6 +21,7 @@ install-bin: udev/ykfde
 	$(INSTALL) -D -m0644 conf/ykfde.conf $(DESTDIR)/etc/ykfde.conf
 	$(INSTALL) -D -m0755 bin/ykfde $(DESTDIR)/usr/bin/ykfde
 	$(INSTALL) -D -m0644 install/ykfde $(DESTDIR)/usr/lib/initcpio/install/ykfde
+	$(INSTALL) -d -m0700 $(DESTDIR)/etc/ykfde.d/
 
 install-doc: README.md README.html
 	$(INSTALL) -D -m0644 README.md $(DESTDIR)/usr/share/doc/ykfde/README.md

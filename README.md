@@ -59,5 +59,3 @@ Limitation / TODO
 * The challenge is not updated. The file is accessible read only in
   initramfs, but we have no easy way to write it to persistant storage.
   So probably this is a design limitation...
-* It may be worth to have a challenge for every key, named with the
-  serial number.

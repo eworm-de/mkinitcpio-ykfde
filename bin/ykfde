@@ -8,15 +8,13 @@ function help() {
 	echo " -2         use Yubico key slot 2 (default)"
 	echo " -d DEVICE  add key to device DEVICE"
 	echo " -h         show this help"
-	echo " -k         keep challenge, just add a new slot"
 }
 
 TMPDIR="$(mktemp --directory --tmpdir=/tmp/ .$(basename ${0})-${$}-XXXXXX)"
-PASS=""
 SLOT="2"
-KEEP="0"
+SERIAL="$(ykinfo -sq)"
 
-while getopts "12d:hk" opt; do
+while getopts "12d:h" opt; do
 	case ${opt} in
 		1)
 			SLOT="1"
@@ -31,12 +29,10 @@ while getopts "12d:hk" opt; do
 			help
 			exit 0
 			;;
-		k)
-			KEEP="1"
-			;;
 	esac
 done
 
+# check we have all information
 if [ -z "${DEVICE}" ]; then
 	echo "No device given." >&2
 	help
@@ -45,48 +41,37 @@ elif [ ! -b "${DEVICE}" ]; then
 	echo "Device '${DEVICE}' does not exist or is not a block device." >&2
 	exit 1
 elif ! cryptsetup isLuks "${DEVICE}" 2>/dev/null; then
-	echo "Device '${DEVICE}' does not exist." >&2
+	echo "Device '${DEVICE}' is not a LUKS device." >&2
+	exit 1
+elif [ -z "${SERIAL}" ]; then
+	echo "Did not get a serial number from key." >&2
 	exit 1
 fi
 
-if [ "${YKFDE_SLOT}" != "${SLOT}" ]; then
-	echo "Please update /etc/ykfde.conf to match your slot!"
+# This directroy should exist, but we create it in case it does not
+if [ ! -d "/etc/ykfde.d/" ]; then
+	install -d -m 0700 "/etc/ykfde.d/"
 fi
 
-echo "Please give extra password if you want to activate two factor"
-echo -n "authentication, just ENTER for none: "
-stty -echo
-read PASS
-stty echo
-echo
-
-if [ -n "${PASS}" ]; then
-	echo "Do not forget to add 'ykfde_twofactor=y' to your boot parameters!"
+# generate the challenge
+if ! makepasswd --chars=64 | tr -d '\n' > "/etc/ykfde.d/challenge-${SERIAL}"; then
+	exit 1
 fi
 
-# generate challenge
-if [ "${KEEP}" = "1" ] && [ -s "/etc/ykfde-challenge" ]; then
-	echo "User requested to keep challenge, not generating a new one."
-	ln -s "/etc/ykfde-challenge" "${TMPDIR}/ykfde-challenge"
-else
-	makepasswd --chars=$((64-${#PASS})) | tr -d '\n' > "${TMPDIR}/ykfde-challenge"
-fi
-
-# generate response and add key to LUKS device
-if ! ykchalresp -${SLOT} "${PASS}$(cat ${TMPDIR}/ykfde-challenge)" | tr -d '\n' > "${TMPDIR}/ykfde-response"; then
+# generate response
+if ! ykchalresp -${SLOT} "$(cat "/etc/ykfde.d/challenge-${SERIAL}")" | tr -d '\n' > "${TMPDIR}/ykfde-response"; then
 	# ykchalresp should have shouted, so do not complain here
 	exit 1
 fi
+
+# add key to LUKS device
 if ! cryptsetup luksAddKey "${DEVICE}" "${TMPDIR}/ykfde-response"; then
 	# cryptsetup should have shouted, ...
 	exit 1
 fi
 
-# shred response and install challenge
+# shred response and remove temporary directory
 shred --remove "${TMPDIR}/ykfde-response"
-if [ "${KEEP}" != "1" ] && [ -s "${TMPDIR}/ykfde-challenge" ] && [ ! -L "${TMPDIR}/ykfde-challenge" ]; then
-	install -D -m 0400 "${TMPDIR}/ykfde-challenge" "/etc/ykfde-challenge"
-fi
 rm -rf "${TMPDIR}"
 
 echo "Please do not forget to remove old keys when changing challenge!"
