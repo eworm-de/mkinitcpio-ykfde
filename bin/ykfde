@@ -14,7 +14,7 @@ SERIAL="$(ykinfo -sq)"
 SLOT="2"
 TMPDIR="$(mktemp --directory --tmpdir=/tmp/ .$(basename ${0})-${$}-XXXXXX)"
 
-while getopts "12d:h" opt; do
+while getopts "12h" opt; do
 	case ${opt} in
 		1)
 			SLOT="1"
