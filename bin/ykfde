@@ -6,13 +6,13 @@ function help() {
 	echo "where OPTIONS are:"
 	echo " -1         use Yubico key slot 1"
 	echo " -2         use Yubico key slot 2 (default)"
-	echo " -d DEVICE  add key to device DEVICE"
 	echo " -h         show this help"
 }
 
-TMPDIR="$(mktemp --directory --tmpdir=/tmp/ .$(basename ${0})-${$}-XXXXXX)"
-SLOT="2"
+DEVICE="$(egrep -v '^(#|$)' /etc/crypttab.initramfs 2>/dev/null | head -n1 | sed 's/\s\+/:/g' | cut -d: -f2)"
 SERIAL="$(ykinfo -sq)"
+SLOT="2"
+TMPDIR="$(mktemp --directory --tmpdir=/tmp/ .$(basename ${0})-${$}-XXXXXX)"
 
 while getopts "12d:h" opt; do
 	case ${opt} in
@@ -21,9 +21,6 @@ while getopts "12d:h" opt; do
 			;;
 		2)
 			SLOT="2"
-			;;
-		d)
-			DEVICE="${OPTARG}"
 			;;
 		h)
 			help
@@ -34,8 +31,7 @@ done
 
 # check we have all information
 if [ -z "${DEVICE}" ]; then
-	echo "No device given." >&2
-	help
+	echo "Failed to get device from /etc/crypttab.initramfs." >&2
 	exit 1
 elif [ ! -b "${DEVICE}" ]; then
 	echo "Device '${DEVICE}' does not exist or is not a block device." >&2
@@ -44,7 +40,7 @@ elif ! cryptsetup isLuks "${DEVICE}" 2>/dev/null; then
 	echo "Device '${DEVICE}' is not a LUKS device." >&2
 	exit 1
 elif [ -z "${SERIAL}" ]; then
-	echo "Did not get a serial number from key." >&2
+	echo "Did not get a serial number from key. Did you insert one?" >&2
 	exit 1
 fi
 
