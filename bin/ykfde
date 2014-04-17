@@ -75,5 +75,4 @@ shred --remove "${TMPDIR}/ykfde-response"
 rm -rf "${TMPDIR}"
 
 echo "Please do not forget to remove old keys when changing challenge!"
-echo "Now make sure /etc/crypttab.initramfs has the needed entry, then"
-echo "run 'mkinitcpio' to build a new initramfs!"
+echo "Now run 'mkinitcpio' to build a new initramfs!"

@@ -38,13 +38,19 @@ This will place files to their desired places in filesystem.
 Usage
 -----
 
-First prepare the key. Plug it in, make sure it is configured for HMAC-
-SHA1, then run:
+First prepare the key. Plug it in, make sure it is configured for
+`HMAC-SHA1`, then run:
 
 > ykfde -d /dev/`LUKS-device`
 
-This will add a new slot to your LUKS device. Add `ykfde` to your hook
-list in `/etc/mkinitcpio.conf` and rebuild your initramfs with:
+This will store a challenge in `/etc/ykfde.d/` and add a new slot to
+your LUKS device. Make sure systemd knows about your encrypted device by
+adding a line to `/etc/crypttab.initramfs`. It should read like:
+
+> `mapping-name` /dev/`LUKS-device` -
+
+Add `ykfde` to your hook list in `/etc/mkinitcpio.conf` and rebuild your
+initramfs with:
 
 > mkinitcpio -p linux
 
