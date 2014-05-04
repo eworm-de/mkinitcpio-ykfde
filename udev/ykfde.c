@@ -122,8 +122,10 @@ int main(int argc, char **argv) {
 	int fd_inotify, watch, length, i = 0;
 	char buffer[EVENT_BUF_LEN];
 
+#if DEBUG
 	/* reopening stderr to /dev/console may help debugging... */
-	/* freopen("/dev/console", "w", stderr); */
+	freopen("/dev/console", "w", stderr);
+#endif
 
 	/* init and open first Yubikey */
 	if (!yk_init()) {
