@@ -4,7 +4,7 @@ MD	:= markdown
 RM	:= rm
 # this is just a fallback in case you do not use git but downloaded
 # a release tarball...
-VERSION := 0.3.2
+VERSION := 0.3.3
 
 all: udev/ykfde README.html
 
