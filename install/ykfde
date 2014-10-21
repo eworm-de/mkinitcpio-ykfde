@@ -5,7 +5,6 @@ build() {
 	add_file /usr/lib/initcpio/udev/20-ykfde.rules /usr/lib/udev/rules.d/20-ykfde.rules
 	add_file /etc/ykfde.conf
 	add_full_dir /etc/ykfde.d/
-	add_module 'usbhid'
 }
 
 help() {
