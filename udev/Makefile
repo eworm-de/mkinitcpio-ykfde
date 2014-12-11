@@ -3,7 +3,7 @@ CC	:= gcc
 INSTALL	:= install
 RM	:= rm
 # flags
-CFLAGS	+= -std=c11 -O2 -Wall -Werror
+CFLAGS	+= -std=c11 -O2 -fpic -pie -Wall -Werror
 
 all: ykfde
 
