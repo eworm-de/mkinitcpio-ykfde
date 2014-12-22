@@ -1,6 +1,11 @@
 #!/bin/sh
 
 build() {
+	# This will update to LUKS key slot if Yubikey is available.
+	# Do not fail if key is not present!
+	/usr/bin/ykfde >/dev/null 2>/dev/null || true
+
+	# install files to initramfs
 	add_binary /usr/lib/udev/ykfde
 	add_file /usr/lib/initcpio/udev/20-ykfde.rules /usr/lib/udev/rules.d/20-ykfde.rules
 	add_file /etc/ykfde.conf

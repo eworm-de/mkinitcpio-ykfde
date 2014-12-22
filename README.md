@@ -43,8 +43,23 @@ adding a line to `/etc/crypttab.initramfs`. It should read like:
 
 > `mapping-name` /dev/`LUKS-device` -
 
-`ykfde` will read its information from there. Then prepare the key. Plug
-it in, make sure it is configured for `HMAC-SHA1`. After that run:
+Update `/etc/ykfde.conf` with correct settings. Add `mapping-name` from
+above to `device name` in the `general` section. Then add a new section
+with your key's decimal serial number containing the key slot setting.
+The file should look like this:
+
+    [general]
+    device name = crypt
+
+    [1234567]
+    luks slot = 1
+
+*Be warned*: Do not remove or overwrite your interactive key! Keep that
+for backup and rescue!
+
+`ykfde` will read its information from these files. Then prepare
+the key. Plug it in, make sure it is configured for `HMAC-SHA1`.
+After that run:
 
 > ykfde
 
@@ -62,6 +77,13 @@ Limitation / TODO
 * At the moment this is specific to Arch Linux. Though everything should
   run with upstream `systemd` just fine anybody has to hook things up with
   [dracut](https://dracut.wiki.kernel.org/) or whatever.
-* The challenge is not updated. The file is accessible read only in
+* The challenge is not updated on boot. The file is accessible read only in
   initramfs, but we have no easy way to write it to persistant storage.
-  So probably this is a design limitation...
+  So probably this is a design limitation... However the install hook does
+  update the challenge when building a new initramfs and and Yubikey is
+  inserted.
+
+### Upstream
+
+URL: [GitHub.com](https://github.com/eworm-de/mkinitcpio-ykfde)  
+Mirror: [eworm.de](http://git.eworm.de/cgit.cgi/mkinitcpio-ykfde/)

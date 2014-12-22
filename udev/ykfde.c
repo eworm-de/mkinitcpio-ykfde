@@ -13,6 +13,7 @@
 
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -36,11 +37,17 @@
 #define EVENT_SIZE	(sizeof (struct inotify_event))
 #define EVENT_BUF_LEN	(1024 * (EVENT_SIZE + 16))
 
+#define CHALLENGELEN	64
+#define RESPONSELEN	SHA1_MAX_BLOCK_SIZE
+#define PASSPHRASELEN	SHA1_DIGEST_SIZE * 2
+
 #define ASK_PATH	"/run/systemd/ask-password/"
 #define ASK_MESSAGE	"Please enter passphrase for disk"
 
 #define	CONFIGFILE	"/etc/ykfde.conf"
 #define CHALLENGEDIR	"/etc/ykfde.d/"
+
+#define CONFYKSLOT	"yk slot"
 
 static int send_on_socket(int fd, const char *socket_name, const void *packet, size_t size) {
         union {
@@ -61,7 +68,7 @@ static int send_on_socket(int fd, const char *socket_name, const void *packet, s
 }
 
 static int try_answer(char * ask_file, char * response) {
-	int8_t ret = EXIT_FAILURE;
+	int8_t rc = EXIT_FAILURE;
 	dictionary * ini;
 	char * ask_message, * ask_socket;
 	int fd_askpass;
@@ -81,12 +88,12 @@ static int try_answer(char * ask_file, char * response) {
 		goto out1;
 	}
 
-	if (send_on_socket(fd_askpass, ask_socket, response, strlen(response)) < 0) {
+	if (send_on_socket(fd_askpass, ask_socket, response, PASSPHRASELEN + 1) < 0) {
 		perror("send_on_socket() failed");
 		goto out2;
 	}
 
-	ret = EXIT_SUCCESS;
+	rc = EXIT_SUCCESS;
 
 out2:
 	close(fd_askpass);
@@ -94,26 +101,23 @@ out2:
 out1:
 	iniparser_freedict(ini);
 
-	return ret;
+	return rc;
 }
 
 int main(int argc, char **argv) {
-	int8_t ret = EXIT_FAILURE;
+	int8_t rc = EXIT_FAILURE;
 	/* Yubikey */
 	YK_KEY * yk;
 	uint8_t slot = SLOT_CHAL_HMAC2;
 	unsigned int serial = 0;
-	unsigned char response[SHA1_MAX_BLOCK_SIZE];
-	unsigned char response_hex[(SHA1_MAX_BLOCK_SIZE * 2) + 1];
-	char response_askpass[(SHA1_MAX_BLOCK_SIZE * 2) + 2];
+	char response[RESPONSELEN], passphrase[PASSPHRASELEN + 1], passphrase_askpass[PASSPHRASELEN + 2];
 	/* iniparser */
 	dictionary * ini;
-	char section_serial[10 /* unsigned int in char */ + 5 /* ":slot" */ + 1];
+	char section_ykslot[10 /* unsigned int in char */ + 1 + sizeof(CONFYKSLOT) + 1];
 	/* read challenge */
-	size_t fsize;
-	char * challenge;
+	char challenge[CHALLENGELEN + 1];
 	char challengefilename[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 1];
-        FILE * challengefile;
+        int challengefile;
 	/* read dir */
 	DIR * dir;
 	struct dirent * ent;
@@ -127,19 +131,22 @@ int main(int argc, char **argv) {
 	freopen("/dev/console", "w", stderr);
 #endif
 
+	memset(challenge, 0, CHALLENGELEN);
+
 	/* init and open first Yubikey */
-	if (!yk_init()) {
+	if ((rc = yk_init()) < 0) {
 		perror("yk_init() failed");
 		goto out10;
 	}
 
 	if ((yk = yk_open_first_key()) == NULL) {
+		rc = EXIT_FAILURE;
 		perror("yk_open_first_key() failed");
 		goto out20;
 	}
 
 	/* read the serial number from key */
-	if(!yk_get_serial(yk, 0, 0, &serial)) {
+	if((rc = !yk_get_serial(yk, 0, 0, &serial)) < 0) {
 		perror("yk_get_serial() failed");
 		goto out30;
 	}
@@ -151,42 +158,37 @@ int main(int argc, char **argv) {
 		goto out30;
 
 	/* read challenge from file */
-	if ((challengefile = fopen(challengefilename, "r")) == NULL) {
+	if ((rc = challengefile = open(challengefilename, O_RDONLY)) < 0) {
 		perror("Failed opening challenge file for reading");
 		goto out30;
 	}
-	fseek(challengefile, 0, SEEK_END);
-	fsize = ftell(challengefile);
-	fseek(challengefile, 0, SEEK_SET);
 
-	if ((challenge = malloc(fsize + 1)) == NULL) {
-		perror("malloc() failed");
-		goto out40;
-	}
-
-	if ((fread(challenge, fsize, 1, challengefile)) != 1) {
+	if ((rc = read(challengefile, challenge, CHALLENGELEN)) < 0) {
 		perror("Failed reading challenge from file");
 		goto out50;
 	}
-	challenge[fsize] = 0;
+	challengefile = close(challengefile);
 	/* finished reading challenge */
 
 	/* try to read config file
 	 * if anything here fails we do not care... slot 2 is the default */
 	if ((ini = iniparser_load(CONFIGFILE)) != NULL) {
 		/* first try the general setting */
-		slot = iniparser_getint(ini, "general:slot", slot);
+		slot = iniparser_getint(ini, "general:" CONFYKSLOT, slot);
 
-		sprintf(section_serial, "%d:slot", serial);
+		sprintf(section_ykslot, "%d:" CONFYKSLOT, serial);
 
 		/* then probe for setting with serial number */
-		slot = iniparser_getint(ini, section_serial, slot);
+		slot = iniparser_getint(ini, section_ykslot, slot);
 
 		switch (slot) {
-			case '1':
+			case 1:
+			case SLOT_CHAL_HMAC1:
 				slot = SLOT_CHAL_HMAC1;
 				break;
-			default: /* slot 2 is default */
+			case 2:
+			case SLOT_CHAL_HMAC2:
+			default:
 				slot = SLOT_CHAL_HMAC2;
 				break;
 		}
@@ -194,26 +196,28 @@ int main(int argc, char **argv) {
 		iniparser_freedict(ini);
 	}
 
-	memset(response, 0, sizeof(response));
-	memset(response_hex, 0, sizeof(response_hex));
+	memset(response, 0, RESPONSELEN);
+	memset(passphrase, 0, PASSPHRASELEN + 1);
 
 	/* do challenge/response and encode to hex */
-	if (!yk_challenge_response(yk, slot, true, strlen(challenge), (unsigned char *)challenge, sizeof(response), response)) {
+	if ((rc = yk_challenge_response(yk, slot, true,
+					CHALLENGELEN, (unsigned char *)challenge,
+					RESPONSELEN, (unsigned char *)response)) < 0) {
 		perror("yk_challenge_response() failed");
 		goto out50;
 	}
-	yubikey_hex_encode((char *)response_hex, (char *)response, 20);
+	yubikey_hex_encode((char *)passphrase, (char *)response, 20);
 
-	sprintf(response_askpass, "+%s", response_hex);
+	sprintf(passphrase_askpass, "+%s", passphrase);
 
 	/* change to directory so we do not have to assemble complete/absolute path */
-	if (chdir(ASK_PATH) != 0) {
+	if ((rc = chdir(ASK_PATH)) != 0) {
 		perror("chdir() failed");
 		goto out50;
 	}
 
 	/* creating the INOTIFY instance and add ASK_PATH directory into watch list */
-	if ((fd_inotify = inotify_init()) < 0) {
+	if ((rc = fd_inotify = inotify_init()) < 0) {
 		perror("inotify_init() failed");
 		goto out50;
 	}
@@ -225,17 +229,18 @@ int main(int argc, char **argv) {
 	if ((dir = opendir(ASK_PATH)) != NULL) {
 		while ((ent = readdir(dir)) != NULL) {
 			if (strncmp(ent->d_name, "ask.", 4) == 0) {
-				if ((ret = try_answer(ent->d_name, response_askpass)) == EXIT_SUCCESS)
+				if ((rc = try_answer(ent->d_name, passphrase_askpass)) == EXIT_SUCCESS)
 					goto out70;
 			}
 		}
 	} else {
+		rc = EXIT_FAILURE;
 		perror ("opendir() failed");
 		goto out60;
 	}
 
 	/* read to determine the event change happens. Actually this read blocks until the change event occurs */
-	if ((length = read(fd_inotify, buffer, EVENT_BUF_LEN)) < 0) {
+	if ((rc = length = read(fd_inotify, buffer, EVENT_BUF_LEN)) < 0) {
 		perror("read() failed");
 		goto out70;
 	}
@@ -245,7 +250,7 @@ int main(int argc, char **argv) {
 	while (i < length) {
 		event = (struct inotify_event *)&buffer[i];
 		if (event->len > 0)
-			if ((ret = try_answer(event->name, response_askpass)) == EXIT_SUCCESS)
+			if ((rc = try_answer(event->name, passphrase_askpass)) == EXIT_SUCCESS)
 				goto out70;
 		i += EVENT_SIZE + event->len;
 	}
@@ -260,33 +265,31 @@ out60:
 	close(fd_inotify);
 
 out50:
-	/* free challenge */
-	free(challenge);
-
-out40:
 	/* close the challenge file */
-	fclose(challengefile);
+	if (challengefile)
+		close(challengefile);
 	/* Unlink it if we were successful, we can not try again later! */
-	if (ret == EXIT_SUCCESS)
+	if (rc == EXIT_SUCCESS)
 		unlink(challengefilename);
 
 out30:
 	/* wipe response (cleartext password!) from memory */
-	memset(response, 0, sizeof(response));
-	memset(response_hex, 0, sizeof(response_hex));
-	memset(response_askpass, 0, sizeof(response_askpass));
+	memset(challenge, 0, CHALLENGELEN);
+	memset(response, 0, RESPONSELEN);
+	memset(passphrase, 0, PASSPHRASELEN + 1);
+	memset(passphrase_askpass, 0, PASSPHRASELEN + 2);
 
 	/* close Yubikey */
-	if (!yk_close_key(yk))
+	if (yk_close_key(yk) < 0)
 		perror("yk_close_key() failed");
 
 out20:
 	/* release Yubikey */
-	if (!yk_release())
+	if (yk_release() < 0)
 		perror("yk_release() failed");
 
 out10:
-	return ret;
+	return rc;
 }
 
 // vim: set syntax=c:
