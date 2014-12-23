@@ -241,9 +241,8 @@ out60:
 		close(challengefile);
 	if (challengefiletmp)
 		close(challengefiletmp);
-	if (access(challengefiletmpname, F_OK ) == 0 ) {
+	if (access(challengefiletmpname, F_OK) == 0 )
 		unlink(challengefiletmpname);
-	}
 
 out50:
 	/* free crypt context */

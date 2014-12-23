@@ -1,0 +1,11 @@
+[Unit]
+Description=Yubikey full disk encryption
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ykfde
+ExecStart=/usr/bin/ykfde-cpio
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

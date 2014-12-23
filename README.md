@@ -18,6 +18,7 @@ To compile and use yubico full disk encryption you need:
 * [mkinitcpio](https://projects.archlinux.org/mkinitcpio.git/) (Though
   it may be easy to port this to any initramfs that uses systemd)
 * [markdown](http://daringfireball.net/projects/markdown/) (HTML documentation)
+* [libarchive](http://www.libarchive.org/) (Update challenge on boot)
 
 Additionally it is expected to have `make` and `pkg-config` around to
 successfully compile.
@@ -64,10 +65,27 @@ After that run:
 > ykfde
 
 This will store a challenge in `/etc/ykfde.d/` and add a new slot to
-your LUKS device. Last add `ykfde` to your hook list in
-`/etc/mkinitcpio.conf` and rebuild your initramfs with:
+your LUKS device. Now you have two choices:
+
+### `ykfde` hook
+
+Last add `ykfde` to your hook list in `/etc/mkinitcpio.conf` and rebuild
+your initramfs with:
 
 > mkinitcpio -p linux
+
+Reboot and have fun!
+
+### `ykfde-cpio` hook
+
+Add `ykfde-cpio` to your hook list in `/etc/mkinitcpio.conf` and rebuild
+your initramfs with:
+
+> mkinitcpio -p linux
+
+Additionally enable `systemd` service `ykfde-cpio.service` and make your
+bootloader load the new `cpio` image `/boot/ykfde-challenges.img` (in
+addition to your usual initramfs).
 
 Reboot and have fun!
 
@@ -77,11 +95,6 @@ Limitation / TODO
 * At the moment this is specific to Arch Linux. Though everything should
   run with upstream `systemd` just fine anybody has to hook things up with
   [dracut](https://dracut.wiki.kernel.org/) or whatever.
-* The challenge is not updated on boot. The file is accessible read only in
-  initramfs, but we have no easy way to write it to persistant storage.
-  So probably this is a design limitation... However the install hook does
-  update the challenge when building a new initramfs and and Yubikey is
-  inserted.
 
 ### Upstream
 
