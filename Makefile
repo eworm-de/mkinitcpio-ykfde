@@ -24,6 +24,7 @@ install-bin: bin/ykfde udev/ykfde
 	$(MAKE) -C udev install
 	$(INSTALL) -D -m0644 conf/ykfde.conf $(DESTDIR)/etc/ykfde.conf
 	$(INSTALL) -D -m0644 mkinitcpio/ykfde $(DESTDIR)/usr/lib/initcpio/install/ykfde
+	$(INSTALL) -D -m0644 mkinitcpio/ykfde-cpio $(DESTDIR)/usr/lib/initcpio/install/ykfde-cpio
 	$(INSTALL) -D -m0644 systemd/ykfde.service $(DESTDIR)/usr/lib/systemd/system/ykfde.service
 	$(INSTALL) -d -m0700 $(DESTDIR)/etc/ykfde.d/
 
