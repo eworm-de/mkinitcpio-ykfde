@@ -24,20 +24,25 @@ config.h: config.def.h
 README.html: README.md
 	$(MD) README.md > README.html
 
-install: install-bin install-doc
+install: install-mkinitcpio
 
 install-bin: bin/ykfde udev/ykfde
 	$(MAKE) -C bin install
 	$(MAKE) -C udev install
 	$(INSTALL) -D -m0644 conf/ykfde.conf $(DESTDIR)/etc/ykfde.conf
-	$(INSTALL) -D -m0644 mkinitcpio/ykfde $(DESTDIR)/usr/lib/initcpio/install/ykfde
-	$(INSTALL) -D -m0644 mkinitcpio/ykfde-cpio $(DESTDIR)/usr/lib/initcpio/install/ykfde-cpio
 	$(INSTALL) -D -m0644 systemd/ykfde-cpio.service $(DESTDIR)/usr/lib/systemd/system/ykfde-cpio.service
 	$(INSTALL) -d -m0700 $(DESTDIR)/etc/ykfde.d/
 
 install-doc: README.md README.html
 	$(INSTALL) -D -m0644 README.md $(DESTDIR)/usr/share/doc/ykfde/README.md
 	$(INSTALL) -D -m0644 README.html $(DESTDIR)/usr/share/doc/ykfde/README.html
+
+install-mkinitcpio: install-bin install-doc
+	$(INSTALL) -D -m0644 mkinitcpio/ykfde $(DESTDIR)/usr/lib/initcpio/install/ykfde
+	$(INSTALL) -D -m0644 mkinitcpio/ykfde-cpio $(DESTDIR)/usr/lib/initcpio/install/ykfde-cpio
+
+install-dracut: install-bin install-doc
+	# porting to dracut? install your files here.
 
 clean:
 	$(MAKE) -C bin clean
