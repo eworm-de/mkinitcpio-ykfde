@@ -7,7 +7,7 @@ CFLAGS	+= -std=c11 -O2 -fpic -pie -Wall -Werror
 
 all: ykfde
 
-ykfde: ykfde.c
+ykfde: ykfde.c ../config.h
 	$(CC) $(CFLAGS) -lykpers-1 -lyubikey -liniparser $(LDFLAGS) -o ykfde ykfde.c
 
 install: ykfde

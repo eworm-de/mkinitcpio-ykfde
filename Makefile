@@ -2,17 +2,24 @@
 INSTALL := install
 MD	:= markdown
 RM	:= rm
+CP	:= cp
 # this is just a fallback in case you do not use git but downloaded
 # a release tarball...
 VERSION := 0.5.0
 
-all: bin/ykfde udev/ykfde README.html
+all: bin/ykfde bin/ykfde-cpio udev/ykfde README.html
 
-bin/ykfde: bin/ykfde.c
+bin/ykfde: bin/ykfde.c config.h
 	$(MAKE) -C bin
 
-udev/ykfde: udev/ykfde.c
+bin/ykfde-cpio: bin/ykfde-cpio.c config.h
+	$(MAKE) -C bin
+
+udev/ykfde: udev/ykfde.c config.h
 	$(MAKE) -C udev
+
+config.h: config.def.h
+	$(CP) config.def.h config.h
 
 README.html: README.md
 	$(MD) README.md > README.html

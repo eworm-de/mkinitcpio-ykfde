@@ -27,17 +27,13 @@
 
 #include <libcryptsetup.h>
 
+#include "../config.h"
+
 /* challenge is 64 byte,
  * HMAC-SHA1 response is 40 byte */
 #define CHALLENGELEN	64
 #define RESPONSELEN	SHA1_MAX_BLOCK_SIZE
 #define PASSPHRASELEN	SHA1_DIGEST_SIZE * 2
-
-#define	CONFIGFILE	"/etc/ykfde.conf"
-#define CHALLENGEDIR	"/etc/ykfde.d/"
-#define CONFYKSLOT	"yk slot"
-#define CONFLUKSSLOT	"luks slot"
-#define CONFDEVNAME	"device name"
 
 int main(int argc, char **argv) {
 	char challenge_old[CHALLENGELEN + 1],

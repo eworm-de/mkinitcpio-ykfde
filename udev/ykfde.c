@@ -34,6 +34,8 @@
 
 #include <iniparser.h>
 
+#include "../config.h"
+
 #define EVENT_SIZE	(sizeof (struct inotify_event))
 #define EVENT_BUF_LEN	(1024 * (EVENT_SIZE + 16))
 
@@ -43,11 +45,6 @@
 
 #define ASK_PATH	"/run/systemd/ask-password/"
 #define ASK_MESSAGE	"Please enter passphrase for disk"
-
-#define	CONFIGFILE	"/etc/ykfde.conf"
-#define CHALLENGEDIR	"/etc/ykfde.d/"
-
-#define CONFYKSLOT	"yk slot"
 
 static int send_on_socket(int fd, const char *socket_name, const void *packet, size_t size) {
         union {

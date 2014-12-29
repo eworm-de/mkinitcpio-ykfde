@@ -22,10 +22,7 @@
 #include <archive.h>
 #include <archive_entry.h>
 
-#define CONFIGFILE      "/etc/ykfde.conf"
-#define CHALLENGEDIR    "/etc/ykfde.d/"
-#define CPIOFILE	"/boot/ykfde-challenges.img"
-#define CPIOTMPFILE	CPIOFILE "-XXXXXX"
+#include "../config.h"
 
 int add_dir(struct archive *archive, const char * path) {
 	struct stat st;
