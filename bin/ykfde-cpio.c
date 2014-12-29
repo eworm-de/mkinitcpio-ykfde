@@ -96,11 +96,6 @@ int main(int argc, const char **argv) {
 		goto out10;
 	}
 
-	if ((rc = add_dir(archive, ".")) < 0) {
-		fprintf(stderr, "add_dir() failed");
-		goto out10;
-	}
-
         while (1) {
 		path = strdup(CHALLENGEDIR + 1);
 		if (strstr(path + pathlength, "/") == NULL)
