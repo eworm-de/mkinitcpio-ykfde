@@ -65,7 +65,12 @@ After that run:
 > ykfde
 
 This will store a challenge in `/etc/ykfde.d/` and add a new slot to
-your LUKS device. Now you have two choices:
+your LUKS device. When `ykfde` asks for a password it requires a valid
+password from available slot.
+
+Now you have two choices. Use *either of both* hooks, depending on whether
+you want to update challenge/response on every boot (`ykfde-cpio`) or
+not (`ykfde`).
 
 ### `ykfde` hook
 
