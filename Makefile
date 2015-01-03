@@ -53,3 +53,5 @@ clean:
 release:
 	git archive --format=tar.xz --prefix=mkinitcpio-ykfde-$(VERSION)/ $(VERSION) > mkinitcpio-ykfde-$(VERSION).tar.xz
 	gpg -ab mkinitcpio-ykfde-$(VERSION).tar.xz
+	git archive --format=tar.gz --prefix=mkinitcpio-ykfde-$(VERSION)/ $(VERSION) > mkinitcpio-ykfde-$(VERSION).tar.gz
+	gpg -ab mkinitcpio-ykfde-$(VERSION).tar.gz
