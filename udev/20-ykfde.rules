@@ -1,5 +1,5 @@
 # do challenge response with Yubikey II and try to answer
 # password agent
 ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", \
-	ATTRS{idVendor}=="1050", ATTRS{idProduct}=="0010|0110|0111", \
+	ATTRS{idVendor}=="1050", ATTRS{idProduct}=="0010|0110|0111|0114|0116|0401|0403|0405|0407|0410", \
 	RUN+="/usr/lib/udev/ykfde"
