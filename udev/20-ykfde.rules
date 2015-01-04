@@ -1,5 +1,28 @@
-# do challenge response with Yubikey II and try to answer
-# password agent
+# do challenge/response with Yubikey and try to answer password agent
+
+# Known Yubikey product ids as of 2015-01-04,
+# Yubikeys with OTP should support HMAC-SHA1 as well.
+# see /usr/include/ykpers-1/ykdef.h or
+# https://github.com/Yubico/yubikey-personalization/blob/master/ykcore/ykdef.h
+#
+# 0010 Yubikey (version 1 and 2)
+# 0110 Yubikey NEO - OTP only
+# 0111 Yubikey NEO - OTP and CCID
+# 0112 Yubikey NEO - CCID only
+# 0113 Yubikey NEO - U2F only
+# 0114 Yubikey NEO - OTP and U2F
+# 0115 Yubikey NEO - U2F and CCID
+# 0116 Yubikey NEO - OTP, U2F and CCID
+# 0401 Yubikey 4 - OTP only
+# 0402 Yubikey 4 - U2F only
+# 0403 Yubikey 4 - OTP and U2F
+# 0404 Yubikey 4 - CCID only
+# 0405 Yubikey 4 - OTP and CCID
+# 0406 Yubikey 4 - U2F and CCID
+# 0407 Yubikey 4 - OTP, U2F and CCID
+# 0410 Yubikey plus - OTP+U2F
+
 ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", \
-	ATTRS{idVendor}=="1050", ATTRS{idProduct}=="0010|0110|0111|0114|0116|0401|0403|0405|0407|0410", \
+	ATTRS{idVendor}=="1050", \
+	ATTRS{idProduct}=="0010|0110|0111|0114|0116|0401|0403|0405|0407|0410", \
 	RUN+="/usr/lib/udev/ykfde"
