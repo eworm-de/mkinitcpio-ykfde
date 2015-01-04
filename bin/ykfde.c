@@ -8,8 +8,11 @@
  * $ gcc -o ykfde ykfde.c -lykpers-1 -lyubikey -lcryptsetup -liniparser
  */
 
-#ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
+#ifndef _XOPEN_SOURCE
+#	define _XOPEN_SOURCE
+#	ifndef _XOPEN_SOURCE_EXTENDED
+#		define _XOPEN_SOURCE_EXTENDED
+#	endif
 #endif
 
 #include <fcntl.h>
