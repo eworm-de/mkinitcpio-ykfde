@@ -43,7 +43,10 @@ install-mkinitcpio: install-bin install-doc
 	$(INSTALL) -D -m0644 udev/20-ykfde.rules $(DESTDIR)/usr/lib/initcpio/udev/20-ykfde.rules
 
 install-dracut: install-bin install-doc
-	# porting to dracut? install your files here.
+	$(INSTALL) -D -m0755 dracut/module-setup.sh $(DESTDIR)/usr/lib/dracut/modules.d/90ykfde/module-setup.sh
+	$(INSTALL) -D -m0755 dracut/parse-mod.sh $(DESTDIR)/usr/lib/dracut/modules.d/90ykfde/parse-mod.sh
+	$(INSTALL) -D -m0755 dracut/ykfde.sh $(DESTDIR)/usr/lib/dracut/modules.d/90ykfde/ykfde.sh
+	$(INSTALL) -D -m0644 udev/20-ykfde.rules $(DESTDIR)/usr/lib/dracut/modules.d/90ykfde/20-ykfde.rules
 
 clean:
 	$(MAKE) -C bin clean
