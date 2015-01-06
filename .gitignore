@@ -1,5 +1,5 @@
 config.h
-README.html
 bin/ykfde
 bin/ykfde-cpio
 udev/ykfde
+*.html

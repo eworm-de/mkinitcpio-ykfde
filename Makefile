@@ -3,26 +3,33 @@ INSTALL := install
 MD	:= markdown
 RM	:= rm
 CP	:= cp
+SED	:= sed
 # this is just a fallback in case you do not use git but downloaded
 # a release tarball...
 VERSION := 0.5.0
 
-all: bin/ykfde bin/ykfde-cpio udev/ykfde README.html
+all: bin/ykfde bin/ykfde-cpio udev/ykfde README.html README-mkinitcpio.html README-dracut.html
 
 bin/ykfde: bin/ykfde.c config.h
-	$(MAKE) -C bin
+	$(MAKE) -C bin ykfde
 
 bin/ykfde-cpio: bin/ykfde-cpio.c config.h
-	$(MAKE) -C bin
+	$(MAKE) -C bin ykfde-cpio
 
 udev/ykfde: udev/ykfde.c config.h
-	$(MAKE) -C udev
+	$(MAKE) -C udev ykfde
 
 config.h: config.def.h
 	$(CP) config.def.h config.h
 
 README.html: README.md
-	$(MD) README.md > README.html
+	$(MD) README.md | $(SED) 's/\(README[-[:alnum:]]*\).md/\1.html/g' > README.html
+
+README-mkinitcpio.html: README-mkinitcpio.md
+	$(MD) README-mkinitcpio.md | $(SED) 's/\(README[-[:alnum:]]*\).md/\1.html/g' > README-mkinitcpio.html
+
+README-dracut.html: README-dracut.md
+	$(MD) README-dracut.md | $(SED) 's/\(README[-[:alnum:]]*\).md/\1.html/g' > README-dracut.html
 
 install: install-mkinitcpio
 
@@ -33,9 +40,13 @@ install-bin: bin/ykfde udev/ykfde
 	$(INSTALL) -D -m0644 systemd/ykfde-cpio.service $(DESTDIR)/usr/lib/systemd/system/ykfde-cpio.service
 	$(INSTALL) -d -m0700 $(DESTDIR)/etc/ykfde.d/
 
-install-doc: README.md README.html
+install-doc: README.html README-mkinitcpio.html README-dracut.html
 	$(INSTALL) -D -m0644 README.md $(DESTDIR)/usr/share/doc/ykfde/README.md
 	$(INSTALL) -D -m0644 README.html $(DESTDIR)/usr/share/doc/ykfde/README.html
+	$(INSTALL) -D -m0644 README-mkinitcpio.md $(DESTDIR)/usr/share/doc/ykfde/README-mkinitcpio.md
+	$(INSTALL) -D -m0644 README-mkinitcpio.html $(DESTDIR)/usr/share/doc/ykfde/README-mkinitcpio.html
+	$(INSTALL) -D -m0644 README-dracut.md $(DESTDIR)/usr/share/doc/ykfde/README-dracut.md
+	$(INSTALL) -D -m0644 README-dracut.html $(DESTDIR)/usr/share/doc/ykfde/README-dracut.html
 
 install-mkinitcpio: install-bin install-doc
 	$(INSTALL) -D -m0644 mkinitcpio/ykfde $(DESTDIR)/usr/lib/initcpio/install/ykfde
@@ -51,7 +62,10 @@ install-dracut: install-bin install-doc
 clean:
 	$(MAKE) -C bin clean
 	$(MAKE) -C udev clean
-	$(RM) -f README.html
+	$(RM) -f README.html README-mkinitcpio.html README-dracut.html
+
+distclean: clean
+	$(RM) -f config.h
 
 release:
 	git archive --format=tar.xz --prefix=mkinitcpio-ykfde-$(VERSION)/ $(VERSION) > mkinitcpio-ykfde-$(VERSION).tar.xz
