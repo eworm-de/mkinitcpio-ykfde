@@ -15,6 +15,7 @@ install() {
 	inst_simple "$moddir/ykfde.sh" /sbin/ykfde.sh
 	inst_simple /usr/lib/udev/ykfde
 	inst_simple /etc/ykfde.conf
+	inst_dir /etc/ykfde.d/*
 
 	dracut_need_initqueue
 }
