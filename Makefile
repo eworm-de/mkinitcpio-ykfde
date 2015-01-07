@@ -23,13 +23,16 @@ config.h: config.def.h
 	$(CP) config.def.h config.h
 
 README.html: README.md
-	$(MD) README.md | $(SED) 's/\(README[-[:alnum:]]*\).md/\1.html/g' > README.html
+	$(MD) README.md > README.html
+	$(SED) -i 's/\(README[-[:alnum:]]*\).md/\1.html/g' README.html
 
 README-mkinitcpio.html: README-mkinitcpio.md
-	$(MD) README-mkinitcpio.md | $(SED) 's/\(README[-[:alnum:]]*\).md/\1.html/g' > README-mkinitcpio.html
+	$(MD) README-mkinitcpio.md > README-mkinitcpio.html
+	$(SED) -i 's/\(README[-[:alnum:]]*\).md/\1.html/g' README-mkinitcpio.html
 
 README-dracut.html: README-dracut.md
-	$(MD) README-dracut.md | $(SED) 's/\(README[-[:alnum:]]*\).md/\1.html/g' > README-dracut.html
+	$(MD) README-dracut.md > README-dracut.html
+	$(SED) -i 's/\(README[-[:alnum:]]*\).md/\1.html/g' README-dracut.html
 
 install: install-mkinitcpio
 
