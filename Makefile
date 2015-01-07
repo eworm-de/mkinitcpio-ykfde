@@ -8,6 +8,8 @@ SED	:= sed
 # a release tarball...
 VERSION := 0.5.0
 
+.DELETE_ON_ERROR:
+
 all: bin/ykfde bin/ykfde-cpio udev/ykfde README.html README-mkinitcpio.html README-dracut.html
 
 bin/ykfde: bin/ykfde.c config.h
@@ -22,17 +24,9 @@ udev/ykfde: udev/ykfde.c config.h
 config.h: config.def.h
 	$(CP) config.def.h config.h
 
-README.html: README.md
-	$(MD) README.md > README.html
-	$(SED) -i 's/\(README[-[:alnum:]]*\).md/\1.html/g' README.html
-
-README-mkinitcpio.html: README-mkinitcpio.md
-	$(MD) README-mkinitcpio.md > README-mkinitcpio.html
-	$(SED) -i 's/\(README[-[:alnum:]]*\).md/\1.html/g' README-mkinitcpio.html
-
-README-dracut.html: README-dracut.md
-	$(MD) README-dracut.md > README-dracut.html
-	$(SED) -i 's/\(README[-[:alnum:]]*\).md/\1.html/g' README-dracut.html
+%.html: %.md
+	$(MD) $< > $@
+	$(SED) -i 's/\(README[-[:alnum:]]*\).md/\1.html/g' $@
 
 install: install-mkinitcpio
 
