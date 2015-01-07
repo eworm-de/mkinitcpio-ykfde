@@ -20,14 +20,16 @@ To compile and use yubikey full disk encryption you need:
 Build and install
 -----------------
 
-Building and installing is very easy. Make sure you have a Softlink from markdown to markdown_py
-> ln -s /bin/markdown_py /bin/markdown
-
-Just run:
+Building and installing is very easy. Just run:
 
 > make
 
-followed by:
+Some distributions do have different names for `markdown` executable.
+For Fedora you have to run:
+
+> make MD=markdown_py
+
+Build command is followed by:
 
 > make install-dracut
 
