@@ -7,7 +7,7 @@
  * compile with:
  * $ gcc -o ykfde ykfde.c -lykpers-1 -lyubikey -liniparser
  *
- * test woth:
+ * test with:
  * $ systemd-ask-password --no-tty "Please enter passphrase for disk foobar..."
  */
 
