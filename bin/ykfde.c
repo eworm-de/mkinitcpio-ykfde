@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 	int i;
 	int8_t rc = EXIT_FAILURE;
 	/* cryptsetup */
-	char * device_name;
+	const char * device_name;
 	int8_t luks_slot = -1;
 	struct crypt_device *cd;
 	crypt_status_info cs;

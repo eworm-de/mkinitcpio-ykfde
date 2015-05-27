@@ -67,7 +67,7 @@ static int send_on_socket(int fd, const char *socket_name, const void *packet, s
 static int try_answer(char * ask_file, char * response) {
 	int8_t rc = EXIT_FAILURE;
 	dictionary * ini;
-	char * ask_message, * ask_socket;
+	const char * ask_message, * ask_socket;
 	int fd_askpass;
 
 	if ((ini = iniparser_load(ask_file)) == NULL)
