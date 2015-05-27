@@ -6,7 +6,7 @@ CP	:= cp
 SED	:= sed
 # this is just a fallback in case you do not use git but downloaded
 # a release tarball...
-VERSION := 0.5.1
+VERSION := 0.5.2
 
 .DELETE_ON_ERROR:
 
