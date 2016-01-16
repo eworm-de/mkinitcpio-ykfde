@@ -21,6 +21,8 @@
 #define CONFYKSLOT	"yk slot"
 /* config file LUKS slot */
 #define CONFLUKSSLOT	"luks slot"
+/* config file second factor */
+#define CONF2NDFACTOR	"second factor"
 
 /* path to cpio archive (initramfs image) */
 #define CPIOFILE	"/boot/ykfde-challenges.img"

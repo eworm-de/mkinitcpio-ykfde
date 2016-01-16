@@ -13,6 +13,7 @@ To compile and use yubikey full disk encryption you need:
 * [iniparser](http://ndevilla.free.fr/iniparser/)
 * [systemd](http://www.freedesktop.org/wiki/Software/systemd/)
 * [cryptsetup](http://code.google.com/p/cryptsetup/)
+* keyutils and linux with `CONFIG_KEYS`
 * [mkinitcpio](https://projects.archlinux.org/mkinitcpio.git/)
 * [markdown](http://daringfireball.net/projects/markdown/) (HTML documentation)
 * [libarchive](http://www.libarchive.org/) (Update challenge on boot)
@@ -88,5 +89,20 @@ your initramfs with:
 Additionally enable `systemd` service `ykfde-cpio.service` and make your
 bootloader load the new `cpio` image `/boot/ykfde-challenges.img` (in
 addition to your usual initramfs).
+
+### Optional `ykfde-2f` hook for second factor
+
+This gives the option to add a second factor for authentication.
+With this you need your Yubikey and an additional passphrase to boot
+your systemd.
+
+Add a second factor with `ykfde`:
+
+> ykfde -s xyz
+
+Add `ykfde-2f` to your hook list in `/etc/mkinitcpio.conf` and rebuild
+your initramfs with:
+
+> mkinitcpio -p linux
 
 Reboot and have fun!

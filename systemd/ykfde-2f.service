@@ -1,0 +1,16 @@
+# (C) 2016 by Christian Hesse <mail@eworm.de>
+#
+# This software may be used and distributed according to the terms
+# of the GNU General Public License, incorporated herein by reference.
+
+[Unit]
+Description=Get 2nd Factor for YKFDE
+DefaultDependencies=no
+Before=cryptsetup-pre.target
+Wants=cryptsetup-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutSec=0
+ExecStart=/usr/lib/systemd/scripts/ykfde-2f

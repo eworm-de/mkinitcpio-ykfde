@@ -5,7 +5,7 @@
  * of the GNU General Public License, incorporated herein by reference.
  *
  * compile with:
- * $ gcc -o ykfde ykfde.c -lykpers-1 -lyubikey -liniparser
+ * $ gcc -o ykfde ykfde.c -liniparser -lkeyutils -lykpers-1 -lyubikey
  *
  * test with:
  * $ systemd-ask-password --no-tty "Please enter passphrase for disk foobar..."
@@ -15,36 +15,49 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stddef.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/inotify.h>
 #include <sys/poll.h>
-#include <sys/signalfd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
 
+#include <iniparser.h>
+
+#include <keyutils.h>
+
 #include <yubikey.h>
 #include <ykpers-1/ykdef.h>
 #include <ykpers-1/ykcore.h>
 
-#include <iniparser.h>
-
 #include "../config.h"
 
-#define EVENT_SIZE	(sizeof (struct inotify_event))
-#define EVENT_BUF_LEN	(1024 * (EVENT_SIZE + 16))
-
-#define CHALLENGELEN	64
+/* Yubikey supports write of 64 byte challenge to slot,
+ * returns HMAC-SHA1 response.
+ *
+ * Lengths are defined in ykpers-1/ykdef.h:
+ * SHA1_MAX_BLOCK_SIZE     64
+ * SHA1_DIGEST_SIZE        20
+ *
+ * For passphrase we use hex encoded digest, that is
+ * twice the length of binary digest. */
+#define CHALLENGELEN	SHA1_MAX_BLOCK_SIZE
 #define RESPONSELEN	SHA1_MAX_BLOCK_SIZE
 #define PASSPHRASELEN	SHA1_DIGEST_SIZE * 2
 
 #define ASK_PATH	"/run/systemd/ask-password/"
 #define ASK_MESSAGE	"Please enter passphrase for disk"
+#define PID_PATH	"/run/ykfde.pid"
+
+void received_signal(int signal) {
+	/* Do nothing, just interrupt the sleep. */
+	return;
+}
 
 static int send_on_socket(int fd, const char *socket_name, const void *packet, size_t size) {
         union {
@@ -64,50 +77,121 @@ static int send_on_socket(int fd, const char *socket_name, const void *packet, s
         return EXIT_SUCCESS;
 }
 
-static int try_answer(char * ask_file, char * response) {
+static int try_answer(YK_KEY * yk, uint8_t slot, const char * ask_file, char * challenge) {
 	int8_t rc = EXIT_FAILURE;
 	dictionary * ini;
 	const char * ask_message, * ask_socket;
 	int fd_askpass;
+	char response[RESPONSELEN],
+		passphrase[PASSPHRASELEN + 1],
+		passphrase_askpass[PASSPHRASELEN + 2];
+	/* keyutils */
+	key_serial_t key;
+	void * payload = NULL;
+	size_t plen;
 
-	if ((ini = iniparser_load(ask_file)) == NULL)
-		perror("cannot parse file");
+	memset(response, 0, RESPONSELEN);
+	memset(passphrase, 0, PASSPHRASELEN + 1);
+	memset(passphrase_askpass, 0, PASSPHRASELEN + 2);
 
-	ask_message = iniparser_getstring(ini, "Ask:Message", NULL);
+	/* get second factor from key store
+	 * if this fails it is not critical... possibly we just do not
+	 * use second factor */
+	key = request_key("user", "ykfde-2f", NULL, 0);
 
-	if (strncmp(ask_message, ASK_MESSAGE, strlen(ASK_MESSAGE)) != 0)
+	if (key > 0) {
+		/* if we have a key id we have a key - so this should succeed */
+		if ((rc = keyctl_read_alloc(key, &payload)) < 0) {
+			perror("Failed reading payload from key");
+			goto out1;
+		}
+
+		/* we replace part of the challenge with the second factor */
+		plen = strlen(payload);
+		memcpy(challenge, payload, plen < CHALLENGELEN / 2 ? plen : CHALLENGELEN / 2);
+
+		free(payload);
+	}
+
+	/* do challenge/response and encode to hex */
+	if ((rc = yk_challenge_response(yk, slot, true,
+					CHALLENGELEN, (unsigned char *) challenge,
+					RESPONSELEN, (unsigned char *) response)) < 0) {
+		perror("yk_challenge_response() failed");
 		goto out1;
+	}
+	yubikey_hex_encode((char *) passphrase, (char *) response, SHA1_DIGEST_SIZE);
 
-	ask_socket = iniparser_getstring(ini, "Ask:Socket", NULL);
+	/* add key to kernel key store */
+	if ((key = add_key("user", "cryptsetup", passphrase, PASSPHRASELEN, KEY_SPEC_USER_KEYRING)) > 0) {
+		if (keyctl_set_timeout(key, 150) < 0)
+			perror("keyctl_set_timeout() failed");
+	} else
+		perror("add_key() failed");
 
-	if ((fd_askpass = socket(AF_UNIX, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0)) < 0) {
-		perror("socket() failed");
+	/* key is placed, no ask file... quit here */
+	if (ask_file == NULL) {
+		rc = key > 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 		goto out1;
 	}
 
-	if (send_on_socket(fd_askpass, ask_socket, response, PASSPHRASELEN + 1) < 0) {
-		perror("send_on_socket() failed");
+	if ((ini = iniparser_load(ask_file)) == NULL) {
+		rc = EXIT_FAILURE;
+		perror("cannot parse file");
+		goto out1;
+	}
+
+	ask_message = iniparser_getstring(ini, "Ask:Message", NULL);
+
+	if (strncmp(ask_message, ASK_MESSAGE, strlen(ASK_MESSAGE)) != 0) {
+		rc = EXIT_FAILURE;
 		goto out2;
+	}
+
+	if ((ask_socket = iniparser_getstring(ini, "Ask:Socket", NULL)) == NULL) {
+		rc = EXIT_FAILURE;
+		perror("Could not get socket name");
+		goto out2;
+	}
+
+	sprintf(passphrase_askpass, "+%s", passphrase);
+
+	if ((fd_askpass = socket(AF_UNIX, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0)) < 0) {
+		rc = EXIT_FAILURE;
+		perror("socket() failed");
+		goto out2;
+	}
+
+	if (send_on_socket(fd_askpass, ask_socket, passphrase_askpass, PASSPHRASELEN + 1) < 0) {
+		rc = EXIT_FAILURE;
+		perror("send_on_socket() failed");
+		goto out3;
 	}
 
 	rc = EXIT_SUCCESS;
 
-out2:
+out3:
 	close(fd_askpass);
 
-out1:
+out2:
 	iniparser_freedict(ini);
+
+out1:
+	/* wipe response (cleartext password!) from memory */
+	memset(response, 0, RESPONSELEN);
+	memset(passphrase, 0, PASSPHRASELEN + 1);
+	memset(passphrase_askpass, 0, PASSPHRASELEN + 2);
 
 	return rc;
 }
 
 int main(int argc, char **argv) {
 	int8_t rc = EXIT_FAILURE;
+	FILE *pidfile;
 	/* Yubikey */
 	YK_KEY * yk;
 	uint8_t slot = SLOT_CHAL_HMAC2;
 	unsigned int serial = 0;
-	char response[RESPONSELEN], passphrase[PASSPHRASELEN + 1], passphrase_askpass[PASSPHRASELEN + 2];
 	/* iniparser */
 	dictionary * ini;
 	char section_ykslot[10 /* unsigned int in char */ + 1 + sizeof(CONFYKSLOT) + 1];
@@ -118,17 +202,32 @@ int main(int argc, char **argv) {
 	/* read dir */
 	DIR * dir;
 	struct dirent * ent;
-	/* inotify */
-	struct inotify_event * event;
-	int fd_inotify, watch, length, i = 0;
-	char buffer[EVENT_BUF_LEN];
 
-#if DEBUG
+#ifdef DEBUG
 	/* reopening stderr to /dev/console may help debugging... */
-	freopen("/dev/console", "w", stderr);
+	FILE * tmp = freopen("/dev/console", "w", stderr);
+	(void) tmp;
 #endif
 
-	memset(challenge, 0, CHALLENGELEN);
+	if ((pidfile = fopen(PID_PATH, "w")) != NULL) {
+		if (fprintf(pidfile, "%d", getpid()) < 0) {
+			rc = EXIT_FAILURE;
+			perror("Failed writing pid");
+			fclose(pidfile);
+			goto out10;
+		}
+		fclose(pidfile);
+	} else {
+		rc = EXIT_FAILURE;
+		perror("Failed opening pid file");
+		goto out10;
+	}
+
+	/* connect to signal */
+	signal(SIGUSR1, received_signal);
+
+	/* initialize static memory */
+	memset(challenge, 0, CHALLENGELEN + 1);
 
 	/* init and open first Yubikey */
 	if ((rc = yk_init()) < 0) {
@@ -143,7 +242,7 @@ int main(int argc, char **argv) {
 	}
 
 	/* read the serial number from key */
-	if((rc = !yk_get_serial(yk, 0, 0, &serial)) < 0) {
+	if ((rc = yk_get_serial(yk, 0, 0, &serial)) < 0) {
 		perror("yk_get_serial() failed");
 		goto out30;
 	}
@@ -151,8 +250,10 @@ int main(int argc, char **argv) {
 	sprintf(challengefilename, CHALLENGEDIR "/challenge-%d", serial);
 
 	/* check if challenge file exists */
-	if (access(challengefilename, R_OK) == -1)
+	if (access(challengefilename, R_OK) == -1) {
+		rc = EXIT_FAILURE;
 		goto out30;
+	}
 
 	/* read challenge from file */
 	if ((rc = challengefile = open(challengefilename, O_RDONLY)) < 0) {
@@ -162,10 +263,8 @@ int main(int argc, char **argv) {
 
 	if ((rc = read(challengefile, challenge, CHALLENGELEN)) < 0) {
 		perror("Failed reading challenge from file");
-		goto out50;
+		goto out40;
 	}
-	challengefile = close(challengefile);
-	/* finished reading challenge */
 
 	/* try to read config file
 	 * if anything here fails we do not care... slot 2 is the default */
@@ -193,75 +292,39 @@ int main(int argc, char **argv) {
 		iniparser_freedict(ini);
 	}
 
-	memset(response, 0, RESPONSELEN);
-	memset(passphrase, 0, PASSPHRASELEN + 1);
-
-	/* do challenge/response and encode to hex */
-	if ((rc = yk_challenge_response(yk, slot, true,
-					CHALLENGELEN, (unsigned char *)challenge,
-					RESPONSELEN, (unsigned char *)response)) < 0) {
-		perror("yk_challenge_response() failed");
-		goto out50;
-	}
-	yubikey_hex_encode((char *)passphrase, (char *)response, 20);
-
-	sprintf(passphrase_askpass, "+%s", passphrase);
-
 	/* change to directory so we do not have to assemble complete/absolute path */
 	if ((rc = chdir(ASK_PATH)) != 0) {
 		perror("chdir() failed");
-		goto out50;
+		goto out40;
 	}
 
-	/* creating the INOTIFY instance and add ASK_PATH directory into watch list */
-	if ((rc = fd_inotify = inotify_init()) < 0) {
-		perror("inotify_init() failed");
-		goto out50;
-	}
-
-	watch = inotify_add_watch(fd_inotify, ASK_PATH, IN_MOVED_TO);
-
-	/* Is the request already there?
-	 * We do this AFTER setting up the inotify watch. This way we do not have race condition. */
+	/* Is the request already there? */
 	if ((dir = opendir(ASK_PATH)) != NULL) {
 		while ((ent = readdir(dir)) != NULL) {
 			if (strncmp(ent->d_name, "ask.", 4) == 0) {
-				if ((rc = try_answer(ent->d_name, passphrase_askpass)) == EXIT_SUCCESS)
-					goto out70;
+				if ((rc = try_answer(yk, slot, ent->d_name, challenge)) == EXIT_SUCCESS)
+					goto out50;
 			}
 		}
 	} else {
 		rc = EXIT_FAILURE;
 		perror ("opendir() failed");
-		goto out60;
+		goto out50;
 	}
 
-	/* read to determine the event change happens. Actually this read blocks until the change event occurs */
-	if ((rc = length = read(fd_inotify, buffer, EVENT_BUF_LEN)) < 0) {
-		perror("read() failed");
-		goto out70;
-	}
+	/* Wait for 90 seconds.
+	 * The user has this time to enter his second factor, resulting in
+	 * SIGUSR1 being sent to us. */
+	sleep(90);
 
-	/* actually read return the list of change events happens.
-	 * Here, read the change event one by one and process it accordingly. */
-	while (i < length) {
-		event = (struct inotify_event *)&buffer[i];
-		if (event->len > 0)
-			if ((rc = try_answer(event->name, passphrase_askpass)) == EXIT_SUCCESS)
-				goto out70;
-		i += EVENT_SIZE + event->len;
-	}
+	/* try again, but for key store this time */
+	rc = try_answer(yk, slot, NULL, challenge);
 
-out70:
+out50:
 	/* close dir */
 	closedir(dir);
 
-out60:
-	/* remove inotify watch and remove file handle */
-	inotify_rm_watch(fd_inotify, watch);
-	close(fd_inotify);
-
-out50:
+out40:
 	/* close the challenge file */
 	if (challengefile)
 		close(challengefile);
@@ -270,12 +333,6 @@ out50:
 		unlink(challengefilename);
 
 out30:
-	/* wipe response (cleartext password!) from memory */
-	memset(challenge, 0, CHALLENGELEN);
-	memset(response, 0, RESPONSELEN);
-	memset(passphrase, 0, PASSPHRASELEN + 1);
-	memset(passphrase_askpass, 0, PASSPHRASELEN + 2);
-
 	/* close Yubikey */
 	if (yk_close_key(yk) < 0)
 		perror("yk_close_key() failed");
@@ -286,6 +343,9 @@ out20:
 		perror("yk_release() failed");
 
 out10:
+	/* wipe challenge from memory */
+	memset(challenge, 0, CHALLENGELEN + 1);
+
 	return rc;
 }
 
