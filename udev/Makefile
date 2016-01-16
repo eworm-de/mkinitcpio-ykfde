@@ -8,7 +8,7 @@ CFLAGS	+= -std=c11 -O2 -fpic -pie -Wall -Werror
 all: ykfde
 
 ykfde: ykfde.c ../config.h
-	$(CC) $(CFLAGS) -lykpers-1 -lyubikey -liniparser $(LDFLAGS) -o ykfde ykfde.c
+	$(CC) $(CFLAGS) -liniparser -lkeyutils -lykpers-1 -lyubikey $(LDFLAGS) -o ykfde ykfde.c
 
 install: ykfde
 	$(INSTALL) -D -m0755 ykfde $(DESTDIR)/usr/lib/udev/ykfde

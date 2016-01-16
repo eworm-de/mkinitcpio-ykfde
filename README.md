@@ -18,9 +18,6 @@ distributions. Please look at what matches best for you.
 Limitation / TODO
 -----------------
 
-* [systemd password agents](http://www.freedesktop.org/wiki/Software/systemd/PasswordAgents/)
-  do not support nested queries. That is why we can not ask for a
-  password ourselfs, breaking two factor authentication (2FA).
 * When using your additional initramfs `grub-mkconfig` does not know
   about that. Regenerating `grub` configuration file `grub.cfg` will
   overwrite our changes.

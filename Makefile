@@ -12,7 +12,7 @@ VERSION := 0.5.2
 
 all: bin/ykfde bin/ykfde-cpio udev/ykfde README.html README-mkinitcpio.html README-dracut.html
 
-bin/ykfde: bin/ykfde.c config.h
+bin/ykfde: bin/ykfde.c config.h version.h
 	$(MAKE) -C bin ykfde
 
 bin/ykfde-cpio: bin/ykfde-cpio.c config.h
@@ -23,6 +23,11 @@ udev/ykfde: udev/ykfde.c config.h
 
 config.h: config.def.h
 	$(CP) config.def.h config.h
+
+version.h: $(wildcard .git/HEAD .git/index .git/refs/tags/*) Makefile
+	echo "#ifndef VERSION" > $@
+	echo "#define VERSION \"$(shell git describe --tags --long 2>/dev/null || echo ${VERSION})\"" >> $@
+	echo "#endif" >> $@
 
 %.html: %.md
 	$(MD) $< > $@
@@ -35,6 +40,8 @@ install-bin: bin/ykfde udev/ykfde
 	$(MAKE) -C udev install
 	$(INSTALL) -D -m0644 conf/ykfde.conf $(DESTDIR)/etc/ykfde.conf
 	$(INSTALL) -D -m0644 systemd/ykfde-cpio.service $(DESTDIR)/usr/lib/systemd/system/ykfde-cpio.service
+	$(INSTALL) -D -m0644 systemd/ykfde-2f.service $(DESTDIR)/usr/lib/systemd/system/ykfde-2f.service
+	$(INSTALL) -D -m0755 systemd/ykfde-2f $(DESTDIR)/usr/lib/systemd/scripts/ykfde-2f
 	$(INSTALL) -d -m0700 $(DESTDIR)/etc/ykfde.d/
 
 install-doc: README.html README-mkinitcpio.html README-dracut.html
@@ -48,6 +55,7 @@ install-doc: README.html README-mkinitcpio.html README-dracut.html
 install-mkinitcpio: install-bin install-doc
 	$(INSTALL) -D -m0644 mkinitcpio/ykfde $(DESTDIR)/usr/lib/initcpio/install/ykfde
 	$(INSTALL) -D -m0644 mkinitcpio/ykfde-cpio $(DESTDIR)/usr/lib/initcpio/install/ykfde-cpio
+	$(INSTALL) -D -m0644 mkinitcpio/ykfde-2f $(DESTDIR)/usr/lib/initcpio/install/ykfde-2f
 	$(INSTALL) -D -m0644 udev/20-ykfde.rules $(DESTDIR)/usr/lib/initcpio/udev/20-ykfde.rules
 
 install-dracut: install-bin install-doc
@@ -59,7 +67,7 @@ install-dracut: install-bin install-doc
 clean:
 	$(MAKE) -C bin clean
 	$(MAKE) -C udev clean
-	$(RM) -f README.html README-mkinitcpio.html README-dracut.html
+	$(RM) -f README.html README-mkinitcpio.html README-dracut.html version.h
 
 distclean: clean
 	$(RM) -f config.h

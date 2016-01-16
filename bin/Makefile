@@ -3,12 +3,12 @@ CC	:= gcc
 INSTALL	:= install
 RM	:= rm
 # flags
-CFLAGS	+= -std=c11 -O2 -fpic -pie -Wall -Werror
+CFLAGS	+= -std=gnu11 -O2 -fpic -pie -Wall -Werror
 
 all: ykfde ykfde-cpio
 
-ykfde: ykfde.c ../config.h
-	$(CC) $(CFLAGS) -lykpers-1 -lyubikey -liniparser -lcryptsetup $(LDFLAGS) -o ykfde ykfde.c
+ykfde: ykfde.c ../config.h ../version.h
+	$(CC) $(CFLAGS) -lcryptsetup -liniparser -lkeyutils -lykpers-1 -lyubikey $(LDFLAGS) -o ykfde ykfde.c
 
 ykfde-cpio: ykfde-cpio.c ../config.h
 	$(CC) $(CFLAGS) -larchive $(LDFLAGS) -o ykfde-cpio ykfde-cpio.c
