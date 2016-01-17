@@ -346,6 +346,8 @@ out10:
 	/* wipe challenge from memory */
 	memset(challenge, 0, CHALLENGELEN + 1);
 
+	unlink(PID_PATH);
+
 	return rc;
 }
 
