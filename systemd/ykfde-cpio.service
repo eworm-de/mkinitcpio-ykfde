@@ -5,6 +5,7 @@ Description=Yubikey full disk encryption
 Type=oneshot
 ExecStart=/usr/bin/ykfde
 ExecStart=/usr/bin/ykfde-cpio
+ExecStop=/usr/bin/ykfde-cpio
 RemainAfterExit=yes
 
 [Install]
