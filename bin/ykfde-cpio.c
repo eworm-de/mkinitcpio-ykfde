@@ -5,7 +5,7 @@
  * of the GNU General Public License, incorporated herein by reference.
  *
  * compile with:
- * $ gcc -o mkcpio mkcpio.c -larchive
+ * $ gcc -o ykfde-cpio ykfde-cpio.c -larchive
  */
 
 #include <dirent.h>
