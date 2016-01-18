@@ -1,13 +1,23 @@
 #!/bin/sh
 
 build() {
-	# install files to initramfs
+	# install basic files to initramfs
 	add_binary /usr/lib/udev/ykfde
 	add_file /usr/lib/initcpio/udev/20-ykfde.rules /usr/lib/udev/rules.d/20-ykfde.rules
 	add_file /etc/ykfde.conf
+
+	# this is required for second factor
+	if egrep -qi 'second factor = (yes|true|1)' /etc/ykfde.conf; then
+		add_systemd_unit cryptsetup-pre.target
+		add_systemd_unit ykfde-2f.service
+		add_symlink /usr/lib/systemd/system/sysinit.target.wants/ykfde-2f.service ../ykfde-2f.service
+		add_file /usr/lib/systemd/scripts/ykfde-2f
+		add_binary keyctl
+		add_binary systemd-ask-password
+	fi
 }
 
 help() {
 	echo "This hook adds support for opening LUKS devices with Yubico key."
-	echo "Please use command 'ykfde' to prepare."
+	echo "Read the documentation for additional steps to set this up."
 }

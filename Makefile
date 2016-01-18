@@ -55,7 +55,6 @@ install-doc: README.html README-mkinitcpio.html README-dracut.html
 
 install-mkinitcpio: install-bin install-doc
 	$(INSTALL) -D -m0644 mkinitcpio/ykfde $(DESTDIR)/usr/lib/initcpio/install/ykfde
-	$(INSTALL) -D -m0644 mkinitcpio/ykfde-2f $(DESTDIR)/usr/lib/initcpio/install/ykfde-2f
 	$(INSTALL) -D -m0644 udev/20-ykfde.rules $(DESTDIR)/usr/lib/initcpio/udev/20-ykfde.rules
 
 install-dracut: install-bin install-doc
