@@ -18,9 +18,7 @@ distributions. Please look at what matches best for you.
 Limitation / TODO
 -----------------
 
-* When using your additional initramfs `grub-mkconfig` does not know
-  about that. Regenerating `grub` configuration file `grub.cfg` will
-  overwrite our changes.
+No known limitations. Yeah!
 
 ### Upstream
 
