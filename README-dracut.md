@@ -83,26 +83,7 @@ Build the cpio archive with the challenges:
 
 > ykfde-cpio
 
-Setup your bootloader with the the additional initram '/boot/ykfde-challenges.img'
-
-#### Setup GRUB2
-
-For ex. change /boot/grub2/grub.cfg
-
-    initrd /initramfs-3.10.0-123.13.2.el7.x86_64.img
-
-to
-
-    initrd /initramfs-3.10.0-123.13.2.el7.x86_64.img /ykfde-challenges.img
-
-
-with EFI /boot/efi/../grub.cfg
-
-    initrdefi /initramfs-3.17.7-300.fc21.x86_64.img
-
-to
-
-    initrdefi /initramfs-3.17.7-300.fc21.x86_64.img /ykfde-challenges.img
+A kernel postinstall script adds a entry to the grub2 every time a new kernel is installed. However, if you build your grub config manually, it gets lost and you must setup the grub conf by yourself or reinstall the kernel-modules.
 
 ### enable service
 

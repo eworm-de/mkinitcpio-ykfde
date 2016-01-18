@@ -62,6 +62,7 @@ install-dracut: install-bin install-doc
 	$(INSTALL) -D -m0755 dracut/parse-mod.sh $(DESTDIR)/usr/lib/dracut/modules.d/90ykfde/parse-mod.sh
 	$(INSTALL) -D -m0755 dracut/ykfde.sh $(DESTDIR)/usr/lib/dracut/modules.d/90ykfde/ykfde.sh
 	$(INSTALL) -D -m0644 udev/20-ykfde.rules $(DESTDIR)/usr/lib/dracut/modules.d/90ykfde/20-ykfde.rules
+	$(INSTALL) -D -m0755 dracut/52-ykfde-postinst.sh $(DESTDIR)/etc/kernel/postinst.d/52-ykfde-postinst.sh
 
 clean:
 	$(MAKE) -C bin clean
