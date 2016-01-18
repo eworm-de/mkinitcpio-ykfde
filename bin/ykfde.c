@@ -57,12 +57,12 @@ const static struct option options_long[] = {
 int main(int argc, char **argv) {
 	unsigned int version = 0, help = 0;
 	char challenge_old[CHALLENGELEN + 1],
-		challenge_old_no_2f[CHALLENGELEN + 1],
 		challenge_new[CHALLENGELEN + 1],
 		response_old[RESPONSELEN],
 		response_new[RESPONSELEN],
 		passphrase_old[PASSPHRASELEN + 1],
 		passphrase_new[PASSPHRASELEN + 1];
+		const char * tmp;
 	char challengefilename[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 1],
 		challengefiletmpname[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 7 /* -XXXXXX */ + 1];
 	int challengefile = 0, challengefiletmp = 0;
@@ -76,7 +76,6 @@ int main(int argc, char **argv) {
 	crypt_status_info cryptstatus;
 	crypt_keyslot_info cryptkeyslot;
 	/* keyutils */
-	int second_factor = 1;
 	key_serial_t key;
 	void * payload = NULL;
 	char * new_2nd_factor = NULL;
@@ -125,7 +124,6 @@ int main(int argc, char **argv) {
 
 	/* initialize static buffers */
 	memset(challenge_old, 0, CHALLENGELEN + 1);
-	memset(challenge_old_no_2f, 0, CHALLENGELEN + 1);
 	memset(challenge_new, 0, CHALLENGELEN + 1);
 	memset(response_old, 0, RESPONSELEN);
 	memset(response_new, 0, RESPONSELEN);
@@ -154,7 +152,7 @@ int main(int argc, char **argv) {
 
 	if ((yk = yk_open_first_key()) == NULL) {
 		rc = EXIT_FAILURE;
-		perror("yk_open_first_key() failed");
+		fprintf(stderr, "No Yubikey available.\n");
 		goto out30;
 	}
 
@@ -229,11 +227,9 @@ int main(int argc, char **argv) {
 
 	/* now that the new challenge has been written to file...
 	 * add second factor to new challenge */
-	if (second_factor) {
-		const char * tmp = new_2nd_factor ? new_2nd_factor : payload;
-		plen = strlen(tmp);
-		memcpy(challenge_new, tmp, plen < CHALLENGELEN / 2 ? plen : CHALLENGELEN / 2);
-	}
+	tmp = new_2nd_factor ? new_2nd_factor : payload;
+	plen = strlen(tmp);
+	memcpy(challenge_new, tmp, plen < CHALLENGELEN / 2 ? plen : CHALLENGELEN / 2);
 
 	/* do challenge/response and encode to hex */
 	if ((rc = yk_challenge_response(yk, yk_slot, true,
@@ -280,38 +276,24 @@ int main(int argc, char **argv) {
 		challengefile = close(challengefile);
 		/* finished reading challenge */
 
-		/* create a copy for second run in loop */
-		memcpy(challenge_old_no_2f, challenge_old, CHALLENGELEN);
-
 		/* copy the second factor */
-		if (second_factor) {
-			plen = strlen(payload);
-			memcpy(challenge_old, payload, plen < CHALLENGELEN / 2 ? plen : CHALLENGELEN / 2);
+		plen = strlen(payload);
+		memcpy(challenge_old, payload, plen < CHALLENGELEN / 2 ? plen : CHALLENGELEN / 2);
+
+		/* do challenge/response and encode to hex */
+		if ((rc = yk_challenge_response(yk, yk_slot, true,
+					CHALLENGELEN, (unsigned char *) challenge_old,
+					RESPONSELEN, (unsigned char *) response_old)) < 0) {
+			perror("yk_challenge_response() failed");
+			goto out60;
 		}
+		yubikey_hex_encode((char *) passphrase_old, (char *) response_old, SHA1_DIGEST_SIZE);
 
-		/* try old with and without 2nd factor */
-		for (uint8_t i = 0; i < 1 + second_factor; i++) {
-			/* do challenge/response and encode to hex */
-			if ((rc = yk_challenge_response(yk, yk_slot, true,
-						CHALLENGELEN, (unsigned char *) challenge_old,
-						RESPONSELEN, (unsigned char *) response_old)) < 0) {
-				perror("yk_challenge_response() failed");
-				goto out60;
-			}
-			yubikey_hex_encode((char *) passphrase_old, (char *) response_old, SHA1_DIGEST_SIZE);
-
-			if ((rc = crypt_keyslot_change_by_passphrase(cryptdevice, luks_slot, luks_slot,
-					passphrase_old, PASSPHRASELEN,
-					passphrase_new, PASSPHRASELEN)) < 0) {
-				fprintf(stderr, "Could not update passphrase for key slot %d on %s try.\n",
-						luks_slot, i ? "second" : "first");
-				if (!second_factor || i > 0)
-					goto out60;
-			} else
-				break;
-
-			/* copy back... */
-			memcpy(challenge_old, challenge_old_no_2f, CHALLENGELEN);
+		if ((rc = crypt_keyslot_change_by_passphrase(cryptdevice, luks_slot, luks_slot,
+				passphrase_old, PASSPHRASELEN,
+				passphrase_new, PASSPHRASELEN)) < 0) {
+			fprintf(stderr, "Could not update passphrase for key slot %d.\n", luks_slot);
+			goto out60;
 		}
 
 		if ((rc = unlink(challengefilename)) < 0) {
@@ -321,7 +303,7 @@ int main(int argc, char **argv) {
 	} else { /* ck == CRYPT_SLOT_INACTIVE */
 		if ((rc = crypt_keyslot_add_by_passphrase(cryptdevice, luks_slot, NULL, 0,
 				passphrase_new, PASSPHRASELEN)) < 0) {
-			fprintf(stderr, "Could add passphrase for key slot %d.\n", luks_slot);
+			fprintf(stderr, "Could not add passphrase for key slot %d.\n", luks_slot);
 			goto out60;
 		}
 	}
@@ -364,7 +346,6 @@ out10:
 	/* wipe response (cleartext password!) from memory */
 	/* This is statically allocated and always save to wipe! */
 	memset(challenge_old, 0, CHALLENGELEN + 1);
-	memset(challenge_old_no_2f, 0, CHALLENGELEN + 1);
 	memset(challenge_new, 0, CHALLENGELEN + 1);
 	memset(response_old, 0, RESPONSELEN);
 	memset(response_new, 0, RESPONSELEN);
