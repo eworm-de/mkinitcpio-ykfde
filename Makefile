@@ -39,6 +39,7 @@ install-bin: bin/ykfde udev/ykfde
 	$(MAKE) -C bin install
 	$(MAKE) -C udev install
 	$(INSTALL) -D -m0644 conf/ykfde.conf $(DESTDIR)/etc/ykfde.conf
+	$(INSTALL) -D -m0755 grub/09_linux $(DESTDIR)/etc/grub.d/09_linux
 	$(INSTALL) -D -m0644 systemd/ykfde-cpio.service $(DESTDIR)/usr/lib/systemd/system/ykfde-cpio.service
 	$(INSTALL) -D -m0644 systemd/ykfde-2f.service $(DESTDIR)/usr/lib/systemd/system/ykfde-2f.service
 	$(INSTALL) -D -m0755 systemd/ykfde-2f $(DESTDIR)/usr/lib/systemd/scripts/ykfde-2f

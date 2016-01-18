@@ -1,0 +1,16 @@
+#!/bin/sh
+
+prefix="/usr"
+datarootdir="${prefix}/share"
+sysconfdir="/etc"
+grub_mkconfig_dir="${sysconfdir}/grub.d"
+
+source "${datarootdir}/grub/grub-mkconfig_lib"
+
+ykfde-cpio
+YKFDE_CHALLENGES="$(make_system_path_relative_to_its_root /boot/ykfde-challenges.img)"
+
+source "${grub_mkconfig_dir}/10_linux" | sed \
+	-e "/\\s*initrd/s|$| ${YKFDE_CHALLENGES}|" \
+	-e "/\\s*menuentry/s|menuentry '\\(.*\\)' --|menuentry '\\1 for YKFDE' --|"
+
