@@ -8,6 +8,7 @@ Description=Get 2nd Factor for YKFDE
 DefaultDependencies=no
 Before=cryptsetup-pre.target
 Wants=cryptsetup-pre.target
+ConditionPathExists=/etc/ykfde.d/
 
 [Service]
 Type=oneshot
