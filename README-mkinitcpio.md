@@ -44,6 +44,8 @@ adding a line to `/etc/crypttab.initramfs`. It should read like:
 
 > `mapping-name` /dev/`LUKS-device` -
 
+Usually there is already an entry for your device.
+
 Update `/etc/ykfde.conf` with correct settings. Add `mapping-name` from
 above to `device name` in the `general` section. Then add a new section
 with your key's decimal serial number containing the key slot setting.
