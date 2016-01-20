@@ -37,7 +37,7 @@ This will place files to their desired places in filesystem.
 Usage
 -----
 
-## config files `/etc/crypttab.initramfs` and `/etc/ykfde.conf`
+### config files `/etc/crypttab.initramfs` and `/etc/ykfde.conf`
 
 Make sure systemd knows about your encrypted device by
 adding a line to `/etc/crypttab.initramfs`. It should read like:
@@ -58,7 +58,7 @@ The minimal file should look like this:
 *Be warned*: Do not remove or overwrite your interactive key! Keep that
 for backup and rescue!
 
-## key setup
+### key setup
 
 `ykfde` will read its information from these files and understands some
 additional options. Run `ykfde --help` for details. Then prepare
@@ -81,7 +81,7 @@ And updating key and second factor is straight forward:
 
 Make sure to enable second factor in `/etc/ykfde.conf`.
 
-## cpio archive with challenges
+### cpio archive with challenges
 
 Every time you update a challenge and/or a second factor run:
 
@@ -93,14 +93,14 @@ automatically on every boot:
 
 > systemctl enable ykfde.service
 
-## mkinitcpio hook `ykfde`
+### mkinitcpio hook `ykfde`
 
 Last add `ykfde` to your hook list in `/etc/mkinitcpio.conf` and rebuild
 your initramfs with:
 
 > mkinitcpio -p linux
 
-## boot loader
+### boot loader
 
 Update you `grub` configuration by running:
 
