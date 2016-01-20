@@ -16,6 +16,7 @@ To compile and use yubikey full disk encryption you need:
 * cryptsetup-devel
 * python-markdown
 * systemd-devel
+* keyutils-libs-devel
 
 Build and install
 -----------------
@@ -38,17 +39,19 @@ This will place files to their desired places in filesystem.
 Usage
 -----
 
+### config files `/etc/crypttab` and `/etc/ykfde.conf`
+
 Make sure systemd knows about your encrypted device by
 adding a line to `/etc/crypttab`. It should read like:
 
 > `mapping-name` /dev/`LUKS-device` -
 
-Normally, there is already an entry for your device.
+Usually there is already an entry for your device.
 
 Update `/etc/ykfde.conf` with correct settings. Add `mapping-name` from
 above to `device name` in the `general` section. Then add a new section
 with your key's decimal serial number containing the key slot setting.
-The file should look like this:
+The minimal file should look like this:
 
     [general]
     device name = crypt
@@ -59,7 +62,10 @@ The file should look like this:
 *Be warned*: Do not remove or overwrite your interactive key! Keep that
 for backup and rescue!
 
-`ykfde` will read its information from these files. Then prepare
+### key setup
+
+`ykfde` will read its information from these files and understands some
+additional options. Run `ykfde --help` for details. Then prepare
 the key. Plug it in, make sure it is configured for `HMAC-SHA1`.
 After that run:
 
@@ -69,47 +75,42 @@ This will store a challenge in `/etc/ykfde.d/` and add a new slot to
 your LUKS device. When `ykfde` asks for a password it requires a valid
 password from available slot.
 
-Build the dracut:
+Adding a key with second factor is as easy:
 
-> dracut -f
+> ykfde -s 2nd-factor
 
-Now you have two choices. If you want, that the challenges are updated every boot, go on. else stop here.
+And updating key and second factor is straight forward:
 
-### change challenges on boot
+> ykfde -s old-2nd-factor -n new-2nd-factor
 
-To change the challenges every boot it takes too long to generate whole new initramfs. So we load an additional initram with the bootloader.
+Make sure to enable second factor in `/etc/ykfde.conf`.
 
-Build the cpio archive with the challenges:
+### cpio archive with challenges
+
+Every time you update a challenge and/or a second factor run:
 
 > ykfde-cpio
 
-Setup your bootloader with the the additional initram '/boot/ykfde-challenges.img'
+This will write a cpio archive `/boot/ykfde-challenges.img` containing
+your current challenges. Enable systemd service `ykfde` to do this
+automatically on every boot:
 
-#### Setup GRUB2
+> systemctl enable ykfde.service
 
-For ex. change /boot/grub2/grub.cfg
+### `dracut`
 
-    initrd /initramfs-3.10.0-123.13.2.el7.x86_64.img
+Build the initramfs:
 
-to
+> dracut -f
 
-    initrd /initramfs-3.10.0-123.13.2.el7.x86_64.img /ykfde-challenges.img
+### boot loader
 
+Update you `grub` configuration by running:
 
-with EFI /boot/efi/../grub.cfg
+> grub2-mkconfig -o /boot/grub/grub.cfg
 
-    initrdefi /initramfs-3.17.7-300.fc21.x86_64.img
-
-to
-
-    initrdefi /initramfs-3.17.7-300.fc21.x86_64.img /ykfde-challenges.img
-
-### enable service
-
-Enable `systemd` service `ykfde-cpio.service`. it generate every boot a new challenge and updates the initram `ykfde-challenges.img` and the LUKS passphrase.
-
-*Be carefully:* Do not enable if you haven't setup the bootloader with the ykfde-challenges.img. If you do, you have to rebuild with dracut manually every time the service is executed.
-
-
+This will add new boot entry that loads the challenges. With other boot
+loaders make sure to load the cpio archive `/boot/ykfde-challenges.img`
+as additional initramfs.
 
 Reboot and have fun!
