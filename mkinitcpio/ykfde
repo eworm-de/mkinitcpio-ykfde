@@ -1,6 +1,13 @@
 #!/bin/sh
 
 build() {
+	# shell and commands
+	local applet
+	add_binary /usr/lib/initcpio/busybox /usr/bin/busybox
+	for applet in cat kill sh sleep; do
+		add_symlink "/usr/bin/${applet}" busybox
+	done
+
 	# install basic files to initramfs
 	add_binary /usr/lib/udev/ykfde
 	add_file /usr/lib/initcpio/udev/20-ykfde.rules /usr/lib/udev/rules.d/20-ykfde.rules
