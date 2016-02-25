@@ -97,8 +97,9 @@ automatically on every boot:
 
 ### mkinitcpio hook `ykfde`
 
-Last add `ykfde` to your hook list in `/etc/mkinitcpio.conf` and rebuild
-your initramfs with:
+Last add `ykfde` to your hook list in `/etc/mkinitcpio.conf`. You should
+already have `systemd` and `sd-encrypt` there as a `systemd`-enabled
+initramfs is prerequisite. Now rebuild your initramfs with:
 
 > mkinitcpio -p linux
 
