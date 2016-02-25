@@ -97,7 +97,7 @@ automatically on every boot:
 
 ### mkinitcpio hook `ykfde`
 
-Last add `ykfde` to your hook list in `/etc/mkinitcpio.conf` and rebuild
+Last add `ykfde` (as well as `systemd` and change from `encrypt` to `sd-encrypt` if you have not already) to your hook list in `/etc/mkinitcpio.conf` and rebuild
 your initramfs with:
 
 > mkinitcpio -p linux
