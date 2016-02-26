@@ -9,6 +9,7 @@ DefaultDependencies=no
 Before=cryptsetup-pre.target
 Wants=cryptsetup-pre.target
 Requires=ykfde-2f.service
+After=ykfde-2f.service
 ConditionPathExists=/run/ykfde.pid
 
 [Service]
