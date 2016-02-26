@@ -12,7 +12,6 @@ build() {
 		add_systemd_unit ykfde-2f.service
 		add_symlink /usr/lib/systemd/system/sysinit.target.wants/ykfde-2f.service ../ykfde-2f.service
 		add_file /usr/lib/systemd/scripts/ykfde-2f
-		add_binary keyctl
 		add_binary systemd-ask-password
 
 		# shell and commands

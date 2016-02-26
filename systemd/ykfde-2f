@@ -5,9 +5,7 @@
 # This software may be used and distributed according to the terms
 # of the GNU General Public License, incorporated herein by reference.
 
-YKFDEFACTOR="$(systemd-ask-password --no-tty 'Please enter second factor for Yubikey full disk encryption!')"
-YKFDESERIAL="$(keyctl 'add' 'user' 'ykfde-2f' "${YKFDEFACTOR}" '@u')"
-keyctl 'timeout' "${YKFDESERIAL}" '150'
+systemd-ask-password --no-tty --keyname='ykfde-2f' 'Please enter second factor for Yubikey full disk encryption!'
 
 if [ -s '/run/ykfde.pid' ]; then
 	kill -USR1 $(cat '/run/ykfde.pid')
