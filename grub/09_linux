@@ -7,6 +7,12 @@ grub_mkconfig_dir="${sysconfdir}/grub.d"
 
 source "${datarootdir}/grub/grub-mkconfig_lib"
 
+if grep -q 'GRUB_CUSTOM_INITRD' "${sysconfdir}/default/grub"; then
+	echo "# Your GRUB installation supports loading custom initramfs images."
+	echo "# Not adding extra boot entries for YKFDE."
+	exit 0
+fi
+
 ykfde-cpio
 YKFDE_CHALLENGES="$(make_system_path_relative_to_its_root /boot/ykfde-challenges.img)"
 
