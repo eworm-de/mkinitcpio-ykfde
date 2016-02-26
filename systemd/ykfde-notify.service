@@ -4,14 +4,15 @@
 # of the GNU General Public License, incorporated herein by reference.
 
 [Unit]
-Description=Get 2nd Factor for YKFDE
+Description=Notify ykfde about key
 DefaultDependencies=no
 Before=cryptsetup-pre.target
 Wants=cryptsetup-pre.target
-ConditionPathExists=/etc/ykfde.d/
+Requires=ykfde-2f.service
+ConditionPathExists=/run/ykfde.pid
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-TimeoutSec=0
-ExecStart=/usr/bin/systemd-ask-password --no-tty --keyname='ykfde-2f' 'Please enter second factor for Yubikey full disk encryption!'
+ExecStart=/usr/bin/pkill -USR1 --pidfile /run/ykfde.pid
+ExecStart=/usr/bin/sleep 0.2
