@@ -16,4 +16,7 @@ ConditionPathExists=/run/ykfde.pid
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/pkill -USR1 --pidfile /run/ykfde.pid
+# ykfde started from udev needs a moment to set up the key
+# in store. It is out of systemd control, so wait a moment
+# here.
 ExecStart=/usr/bin/sleep 0.2
