@@ -43,6 +43,7 @@
 #define CHALLENGELEN	SHA1_MAX_BLOCK_SIZE
 #define RESPONSELEN	SHA1_MAX_BLOCK_SIZE
 #define PASSPHRASELEN	SHA1_DIGEST_SIZE * 2
+#define MAX2FLEN	CHALLENGELEN / 2
 
 const static char optstring[] = "hn:s:V";
 const static struct option options_long[] = {
@@ -229,7 +230,7 @@ int main(int argc, char **argv) {
 	 * add second factor to new challenge */
 	tmp = new_2nd_factor ? new_2nd_factor : payload;
 	plen = strlen(tmp);
-	memcpy(challenge_new, tmp, plen < CHALLENGELEN / 2 ? plen : CHALLENGELEN / 2);
+	memcpy(challenge_new, tmp, plen < MAX2FLEN ? plen : MAX2FLEN);
 
 	/* do challenge/response and encode to hex */
 	if ((rc = yk_challenge_response(yk, yk_slot, true,
@@ -278,7 +279,7 @@ int main(int argc, char **argv) {
 
 		/* copy the second factor */
 		plen = strlen(payload);
-		memcpy(challenge_old, payload, plen < CHALLENGELEN / 2 ? plen : CHALLENGELEN / 2);
+		memcpy(challenge_old, payload, plen < MAX2FLEN ? plen : MAX2FLEN);
 
 		/* do challenge/response and encode to hex */
 		if ((rc = yk_challenge_response(yk, yk_slot, true,
