@@ -206,6 +206,11 @@ int main(int argc, char **argv) {
 			payload = strdup("");
 	}
 
+	/* warn when second factor is not enabled in config */
+	if ((*(char*)payload != 0 || new_2nd_factor != NULL) &&
+			iniparser_getboolean(ini, "general:" CONF2NDFACTOR, 0) == 0)
+		fprintf(stderr, "Warning: Processing second factor, but not enabled in config!\n");
+
 	/* get random number and limit to printable ASCII character (32 to 126) */
 	for(i = 0; i < CHALLENGELEN; i++)
 		challenge_new[i] = (rand() % (126 - 32)) + 32;
