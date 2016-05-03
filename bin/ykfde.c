@@ -238,10 +238,11 @@ int main(int argc, char **argv) {
 	memcpy(challenge_new, tmp, plen < MAX2FLEN ? plen : MAX2FLEN);
 
 	/* do challenge/response and encode to hex */
-	if ((rc = yk_challenge_response(yk, yk_slot, true,
-				CHALLENGELEN, (unsigned char *) challenge_new,
-				RESPONSELEN, (unsigned char *) response_new)) < 0) {
+	if (yk_challenge_response(yk, yk_slot, true,
+			CHALLENGELEN, (unsigned char *) challenge_new,
+			RESPONSELEN, (unsigned char *) response_new) == 0) {
 		perror("yk_challenge_response() failed");
+		rc = EXIT_FAILURE;
 		goto out50;
 	}
 	yubikey_hex_encode((char *) passphrase_new, (char *) response_new, SHA1_DIGEST_SIZE);
@@ -287,10 +288,11 @@ int main(int argc, char **argv) {
 		memcpy(challenge_old, payload, plen < MAX2FLEN ? plen : MAX2FLEN);
 
 		/* do challenge/response and encode to hex */
-		if ((rc = yk_challenge_response(yk, yk_slot, true,
-					CHALLENGELEN, (unsigned char *) challenge_old,
-					RESPONSELEN, (unsigned char *) response_old)) < 0) {
+		if (yk_challenge_response(yk, yk_slot, true,
+				CHALLENGELEN, (unsigned char *) challenge_old,
+				RESPONSELEN, (unsigned char *) response_old) == 0) {
 			perror("yk_challenge_response() failed");
+			rc = EXIT_FAILURE;
 			goto out60;
 		}
 		yubikey_hex_encode((char *) passphrase_old, (char *) response_old, SHA1_DIGEST_SIZE);
