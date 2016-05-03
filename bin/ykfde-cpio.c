@@ -10,6 +10,7 @@
 
 #include <dirent.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,6 +20,17 @@
 #include <archive_entry.h>
 
 #include "../config.h"
+#include "../version.h"
+
+#define PROGNAME "ykfde-cpio"
+
+const static char optstring[] = "hV";
+const static struct option options_long[] = {
+	/* name			has_arg			flag	val */
+	{ "help",		no_argument,		NULL,	'h' },
+	{ "version",		no_argument,		NULL,	'V' },
+	{ 0, 0, 0, 0 }
+};
 
 int add_dir(struct archive *archive, const char * path) {
 	struct stat st;
@@ -53,7 +65,9 @@ out:
 	return rc;
 }
 
-int main(int argc, const char **argv) {
+int main(int argc, char **argv) {
+	int i;
+	unsigned int version = 0, help = 0;
 	char cpiotmpfile[] = CPIOTMPFILE;
 	struct archive *archive;
 	struct archive_entry *entry;
@@ -66,6 +80,25 @@ int main(int argc, const char **argv) {
 	off_t pathlength = 0;
 	int8_t rc = EXIT_FAILURE;
 
+	/* get command line options */
+	while ((i = getopt_long(argc, argv, optstring, options_long, NULL)) != -1)
+		switch (i) {
+			case 'h':
+				help++;
+				break;
+			case 'V':
+				version++;
+				break;
+		}
+
+	if (version > 0)
+		printf("%s: %s v%s (compiled: " __DATE__ ", " __TIME__ ")\n", argv[0], PROGNAME, VERSION);
+
+	if (help > 0)
+		fprintf(stderr, "usage: %s [-h] [-V]\n", argv[0]);
+
+	if (version > 0 || help > 0)
+		return EXIT_SUCCESS;
 	if ((rc = fdarchive = mkstemp(cpiotmpfile)) < 0) {
 		perror("mkstemp() failed");
 		goto out10;
