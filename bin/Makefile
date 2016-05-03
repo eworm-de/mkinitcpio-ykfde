@@ -11,7 +11,7 @@ all: ykfde ykfde-cpio
 ykfde: ykfde.c ../config.h ../version.h
 	$(CC) $(CFLAGS) -lcryptsetup -liniparser -lkeyutils -lykpers-1 -lyubikey $(LDFLAGS) -o ykfde ykfde.c
 
-ykfde-cpio: ykfde-cpio.c ../config.h
+ykfde-cpio: ykfde-cpio.c ../config.h ../version.h
 	$(CC) $(CFLAGS) -larchive $(LDFLAGS) -o ykfde-cpio ykfde-cpio.c
 
 install: ykfde ykfde-cpio
