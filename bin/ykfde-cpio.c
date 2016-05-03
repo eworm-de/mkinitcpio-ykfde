@@ -99,6 +99,7 @@ int main(int argc, char **argv) {
 
 	if (version > 0 || help > 0)
 		return EXIT_SUCCESS;
+
 	if ((rc = fdarchive = mkstemp(cpiotmpfile)) < 0) {
 		perror("mkstemp() failed");
 		goto out10;
