@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
 	if (cryptstatus != CRYPT_ACTIVE && cryptstatus != CRYPT_BUSY) {
 		rc = EXIT_FAILURE;
                 fprintf(stderr, "Device %s is invalid or inactive.\n", device_name);
-		goto out60;
+		goto out50;
 	}
 
 	/* initialize crypt device */
