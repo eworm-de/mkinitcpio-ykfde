@@ -114,10 +114,11 @@ static int try_answer(YK_KEY * yk, uint8_t slot, const char * ask_file, char * c
 	}
 
 	/* do challenge/response and encode to hex */
-	if ((rc = yk_challenge_response(yk, slot, true,
-					CHALLENGELEN, (unsigned char *) challenge,
-					RESPONSELEN, (unsigned char *) response)) < 0) {
+	if (yk_challenge_response(yk, slot, true,
+			CHALLENGELEN, (unsigned char *) challenge,
+			RESPONSELEN, (unsigned char *) response) == 0) {
 		perror("yk_challenge_response() failed");
+		rc = EXIT_FAILURE;
 		goto out1;
 	}
 	yubikey_hex_encode((char *) passphrase, (char *) response, SHA1_DIGEST_SIZE);
