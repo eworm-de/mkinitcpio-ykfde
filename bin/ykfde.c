@@ -97,10 +97,22 @@ int main(int argc, char **argv) {
 				help++;
 				break;
 			case 'n':
+				if (new_2nd_factor != NULL) {
+					fprintf(stderr, "We already have a new second factor. Did you specify it twice?\n");
+					rc = EXIT_FAILURE;
+					goto out10;
+				}
+
 				new_2nd_factor = strdup(optarg);
 				memset(optarg, '*', strlen(optarg));
 				break;
 			case 's':
+				if (payload != NULL) {
+					fprintf(stderr, "We already have a second factor. Did you specify it twice?\n");
+					rc = EXIT_FAILURE;
+					goto out10;
+				}
+
 				payload = strdup(optarg);
 				memset(optarg, '*', strlen(optarg));
 				break;
