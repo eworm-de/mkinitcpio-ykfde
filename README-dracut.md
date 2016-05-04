@@ -72,20 +72,24 @@ After that run:
 > ykfde
 
 This will store a challenge in `/etc/ykfde.d/` and add a new slot to
-your LUKS device. When `ykfde` asks for a password it requires a valid
-password from available slot.
+your LUKS device. When `ykfde` asks for a passphrase it requires a valid
+passphrase from available slot.
 
-Adding a key with second factor is as easy:
+Alternatively, adding a key with second factor is as easy:
 
-> ykfde -s 2nd-factor
+> ykfde --new-2nd-factor 2nd-factor
 
-And updating key and second factor is straight forward:
+To update the challenge run:
 
-> ykfde -s old-2nd-factor -n new-2nd-factor
+> ykfde --2nd-factor 2nd-factor
+
+And changing second factor is straight forward:
+
+> ykfde --2nd-factor current-2nd-factor --new-2nd-factor new-2nd-factor
 
 The second factor can be read from terminal, increasing security by not
-displaying on display and not writing to shell history. Use capital
-switches (`-S` and `-N`) for that.
+displaying on display and not writing to shell history. Use switches
+`--ask-2nd-factor` and `--ask-new-2nd-factor` for that.
 
 Make sure to enable second factor in `/etc/ykfde.conf`.
 
