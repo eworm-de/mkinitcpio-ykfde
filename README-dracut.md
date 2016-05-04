@@ -83,6 +83,10 @@ And updating key and second factor is straight forward:
 
 > ykfde -s old-2nd-factor -n new-2nd-factor
 
+The second factor can be read from terminal, increasing security by not
+displaying on display and not writing to shell history. Use capital
+switches (`-S` and `-N`) for that.
+
 Make sure to enable second factor in `/etc/ykfde.conf`.
 
 ### cpio archive with challenges
