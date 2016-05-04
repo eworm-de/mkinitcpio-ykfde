@@ -15,6 +15,8 @@
 #include <string.h>
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <termios.h>
+#include <unistd.h>
 
 #include <iniparser.h>
 
@@ -45,12 +47,14 @@
 #define PASSPHRASELEN	SHA1_DIGEST_SIZE * 2
 #define MAX2FLEN	CHALLENGELEN / 2
 
-const static char optstring[] = "hn:s:V";
+const static char optstring[] = "hn:Ns:SV";
 const static struct option options_long[] = {
 	/* name			has_arg			flag	val */
 	{ "help",		no_argument,		NULL,	'h' },
 	{ "2nd-factor",		required_argument,	NULL,	's' },
+	{ "ask-2nd-factor",	no_argument,		NULL,	'S' },
 	{ "new-2nd-factor",	required_argument,	NULL,	'n' },
+	{ "ask-new-2nd-factor",	no_argument,		NULL,	'N' },
 	{ "version",		no_argument,		NULL,	'V' },
 	{ 0, 0, 0, 0 }
 };
@@ -68,7 +72,11 @@ int main(int argc, char **argv) {
 		challengefiletmpname[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 7 /* -XXXXXX */ + 1];
 	int challengefile = 0, challengefiletmp = 0;
 	struct timeval tv;
+	struct termios tp, tp_save;
+	uint8_t have_term = 1;
 	int i;
+	size_t len;
+	ssize_t readlen;
 	int8_t rc = EXIT_FAILURE;
 	/* cryptsetup */
 	const char * device_name;
@@ -79,8 +87,7 @@ int main(int argc, char **argv) {
 	/* keyutils */
 	key_serial_t key;
 	void * payload = NULL;
-	char * new_2nd_factor = NULL;
-	size_t plen = 0;
+	char * second_factor = NULL, * new_2nd_factor = NULL;
 	/* yubikey */
 	YK_KEY * yk;
 	uint8_t yk_slot = SLOT_CHAL_HMAC2;
@@ -90,6 +97,20 @@ int main(int argc, char **argv) {
 	char section_ykslot[10 /* unsigned int in char */ + 1 + sizeof(CONFYKSLOT) + 1];
 	char section_luksslot[10 + 1 + sizeof(CONFLUKSSLOT) + 1];
 
+	/* get terminal properties */
+	if (tcgetattr(STDIN_FILENO, &tp) < 0)
+		have_term = 0;
+	tp_save = tp;
+
+	/* disable echo on terminal */
+	tp.c_lflag &= ~ECHO;
+	if (have_term)
+		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tp) < 0) {
+			fprintf(stderr, "Failed setting terminal attributes.\n");
+			rc = EXIT_FAILURE;
+			goto out0;
+		}
+
 	/* get command line options */
 	while ((i = getopt_long(argc, argv, optstring, options_long, NULL)) != -1)
 		switch (i) {
@@ -97,28 +118,58 @@ int main(int argc, char **argv) {
 				help++;
 				break;
 			case 'n':
+			case 'N':
 				if (new_2nd_factor != NULL) {
 					fprintf(stderr, "We already have a new second factor. Did you specify it twice?\n");
 					rc = EXIT_FAILURE;
 					goto out10;
 				}
 
-				new_2nd_factor = strdup(optarg);
-				memset(optarg, '*', strlen(optarg));
+				if (optarg == NULL) { /* N */
+					if (have_term == 0)
+						fprintf(stderr, "Warning: Could not disable echo, input will be visible!\n");
+					printf("Please give new second factor:");
+					readlen = getline(&new_2nd_factor, &len, stdin);
+					new_2nd_factor[readlen - 1] = '\0';
+					putchar('\n');
+				} else { /* n */
+					new_2nd_factor = strdup(optarg);
+					memset(optarg, '*', strlen(optarg));
+				}
+
 				break;
 			case 's':
-				if (payload != NULL) {
+			case 'S':
+				if (second_factor != NULL) {
 					fprintf(stderr, "We already have a second factor. Did you specify it twice?\n");
 					rc = EXIT_FAILURE;
 					goto out10;
 				}
 
-				payload = strdup(optarg);
-				memset(optarg, '*', strlen(optarg));
+				if (optarg == NULL) { /* S */
+					if (have_term == 0)
+						fprintf(stderr, "Warning: Could not disable echo, input will be visible!\n");
+					printf("Please give second factor:");
+					readlen = getline(&second_factor, &len, stdin);
+					second_factor[readlen - 1] = '\0';
+					putchar('\n');
+				} else { /* s */
+					second_factor = strdup(optarg);
+					memset(optarg, '*', strlen(optarg));
+				}
+
 				break;
 			case 'V':
 				version++;
 				break;
+		}
+
+	/* restore terminal */
+	if (have_term)
+		if (tcsetattr(STDIN_FILENO, TCSANOW, &tp_save) < 0) {
+			fprintf(stderr, "Failed setting terminal attributes.\n");
+			rc = EXIT_FAILURE;
+			goto out10;
 		}
 
 	if (version > 0)
@@ -204,7 +255,7 @@ int main(int argc, char **argv) {
 		goto out40;
 	}
 
-	if (payload == NULL) {
+	if (second_factor == NULL) {
 		/* get second factor from key store */
 		if ((key = request_key("user", "ykfde-2f", NULL, 0)) < 0)
 			fprintf(stderr, "Failed requesting key. That's ok if you do not use\n"
@@ -216,12 +267,13 @@ int main(int argc, char **argv) {
 				perror("Failed reading payload from key");
 				goto out40;
 			}
+			second_factor = payload;
 		} else
-			payload = strdup("");
+			second_factor = strdup("");
 	}
 
 	/* warn when second factor is not enabled in config */
-	if ((*(char*)payload != 0 || new_2nd_factor != NULL) &&
+	if ((*second_factor != 0 || new_2nd_factor != NULL) &&
 			iniparser_getboolean(ini, "general:" CONF2NDFACTOR, 0) == 0)
 		fprintf(stderr, "Warning: Processing second factor, but not enabled in config!\n");
 
@@ -247,9 +299,9 @@ int main(int argc, char **argv) {
 
 	/* now that the new challenge has been written to file...
 	 * add second factor to new challenge */
-	tmp = new_2nd_factor ? new_2nd_factor : payload;
-	plen = strlen(tmp);
-	memcpy(challenge_new, tmp, plen < MAX2FLEN ? plen : MAX2FLEN);
+	tmp = new_2nd_factor ? new_2nd_factor : second_factor;
+	len = strlen(tmp);
+	memcpy(challenge_new, tmp, len < MAX2FLEN ? len : MAX2FLEN);
 
 	/* do challenge/response and encode to hex */
 	if (yk_challenge_response(yk, yk_slot, true,
@@ -298,8 +350,8 @@ int main(int argc, char **argv) {
 		/* finished reading challenge */
 
 		/* copy the second factor */
-		plen = strlen(payload);
-		memcpy(challenge_old, payload, plen < MAX2FLEN ? plen : MAX2FLEN);
+		len = strlen(second_factor);
+		memcpy(challenge_old, second_factor, len < MAX2FLEN ? len : MAX2FLEN);
 
 		/* do challenge/response and encode to hex */
 		if (yk_challenge_response(yk, yk_slot, true,
@@ -375,8 +427,9 @@ out10:
 	memset(passphrase_new, 0, PASSPHRASELEN + 1);
 
 	free(new_2nd_factor);
-	free(payload);
+	free(second_factor);
 
+out0:
 	return rc;
 }
 
