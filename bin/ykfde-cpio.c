@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
 		printf("%s: %s v%s (compiled: " __DATE__ ", " __TIME__ ")\n", argv[0], PROGNAME, VERSION);
 
 	if (help > 0)
-		fprintf(stderr, "usage: %s [-h] [-V]\n", argv[0]);
+		fprintf(stderr, "usage: %s [-h|--help] [-V|--version]\n", argv[0]);
 
 	if (version > 0 || help > 0)
 		return EXIT_SUCCESS;

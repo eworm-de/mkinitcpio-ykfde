@@ -184,7 +184,8 @@ int main(int argc, char **argv) {
 		printf("%s: %s v%s (compiled: " __DATE__ ", " __TIME__ ")\n", argv[0], PROGNAME, VERSION);
 
 	if (help > 0)
-		fprintf(stderr, "usage: %s [-h] [-n <new-2nd-factor>] [-s <2nd-factor>] [-V]\n", argv[0]);
+		fprintf(stderr, "usage: %s [-h|--help] [-n|--new-2nd-factor <new-2nd-factor>] [-N|--ask-new-2nd-factor]\n"
+				"        [-s|--2nd-factor <2nd-factor>] [-S|--ask-2nd-factor] [-V|--version]\n", argv[0]);
 
 	if (version > 0 || help > 0)
 		return EXIT_SUCCESS;
