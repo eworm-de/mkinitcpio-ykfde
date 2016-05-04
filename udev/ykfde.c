@@ -231,14 +231,15 @@ int main(int argc, char **argv) {
 	memset(challenge, 0, CHALLENGELEN + 1);
 
 	/* init and open first Yubikey */
-	if ((rc = yk_init()) < 0) {
+	if (yk_init() == 0) {
 		perror("yk_init() failed");
+		rc = EXIT_FAILURE;
 		goto out10;
 	}
 
 	if ((yk = yk_open_first_key()) == NULL) {
-		rc = EXIT_FAILURE;
 		perror("yk_open_first_key() failed");
+		rc = EXIT_FAILURE;
 		goto out20;
 	}
 
