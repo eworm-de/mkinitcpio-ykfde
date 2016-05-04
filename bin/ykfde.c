@@ -340,12 +340,12 @@ out50:
 
 out40:
 	/* close Yubikey */
-	if (!yk_close_key(yk))
+	if (yk_close_key(yk) == 0)
 		perror("yk_close_key() failed");
 
 out30:
 	/* release Yubikey */
-	if (!yk_release())
+	if (yk_release() == 0)
 		perror("yk_release() failed");
 
 out20:
