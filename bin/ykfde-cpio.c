@@ -122,6 +122,7 @@ int main(int argc, char **argv) {
 		path = strdup(CHALLENGEDIR + 1);
 		if (strstr(path + pathlength, "/") == NULL)
 			break;
+
 		*strstr(path + pathlength, "/") = 0;
 		pathlength = strlen(path) + 1;
 
@@ -133,35 +134,50 @@ int main(int argc, char **argv) {
 		free(path);
 	}
 
-	if ((dir = opendir(CHALLENGEDIR)) != NULL) {
-		while ((ent = readdir(dir)) != NULL) {
-			filename = malloc(sizeof(CHALLENGEDIR) + strlen(ent->d_name) + 1);
-			sprintf(filename, CHALLENGEDIR "%s", ent->d_name);
+	if ((dir = opendir(CHALLENGEDIR)) == NULL) {
+		perror("opendir() failed");
+		goto out10;
+	}
 
-			if (stat(filename, &st) < 0) {
-				perror("stat() failed");
+	while ((ent = readdir(dir)) != NULL) {
+		filename = malloc(sizeof(CHALLENGEDIR) + strlen(ent->d_name) + 1);
+		sprintf(filename, CHALLENGEDIR "%s", ent->d_name);
+
+		if (stat(filename, &st) < 0) {
+			perror("stat() failed");
+			goto out10;
+		}
+
+		if (S_ISREG(st.st_mode)) {
+			if ((entry = archive_entry_new()) == NULL) {
+				fprintf(stderr, "archive_entry_new() failed.\n");
 				goto out10;
 			}
 
-			if (S_ISREG(st.st_mode)) {
-				if ((entry = archive_entry_new()) == NULL) {
-					fprintf(stderr, "archive_entry_new() failed.\n");
-					goto out10;
-				}
+			/* these do not return exit code */
+			archive_entry_set_pathname(entry, filename + 1);
+			archive_entry_set_size(entry, st.st_size);
+			archive_entry_set_filetype(entry, AE_IFREG);
+			archive_entry_set_perm(entry, 0644);
 
-				/* these do not return exit code */
-				archive_entry_set_pathname(entry, filename + 1);
-				archive_entry_set_size(entry, st.st_size);
-				archive_entry_set_filetype(entry, AE_IFREG);
-				archive_entry_set_perm(entry, 0644);
+			if (archive_write_header(archive, entry) != ARCHIVE_OK) {
+				fprintf(stderr, "archive_write_header() failed");
+				goto out10;
+			}
 
-				if (archive_write_header(archive, entry) != ARCHIVE_OK) {
-					fprintf(stderr, "archive_write_header() failed");
-					goto out10;
-				}
+			if ((fdfile = open(filename, O_RDONLY)) < 0) {
+				perror("open() failed");
+				goto out10;
+			}
 
-				if ((fdfile = open(filename, O_RDONLY)) < 0) {
-					perror("open() failed");
+			if ((len = read(fdfile, buff, sizeof(buff))) < 0) {
+				perror("read() failed");
+				goto out10;
+			}
+
+			while (len > 0) {
+				if (archive_write_data(archive, buff, len) < 0) {
+					fprintf(stderr, "archive_write_data() failed");
 					goto out10;
 				}
 
@@ -169,34 +185,20 @@ int main(int argc, char **argv) {
 					perror("read() failed");
 					goto out10;
 				}
-
-				while (len > 0) {
-					if (archive_write_data(archive, buff, len) < 0) {
-						fprintf(stderr, "archive_write_data() failed");
-						goto out10;
-					}
-
-					if ((len = read(fdfile, buff, sizeof(buff))) < 0) {
-						perror("read() failed");
-						goto out10;
-					}
-				}
-
-				if (close(fdfile) < 0) {
-					perror("close() failed");
-					goto out10;
-				}
-
-				archive_entry_free(entry);
 			}
-			free(filename);
+
+			if (close(fdfile) < 0) {
+				perror("close() failed");
+				goto out10;
+			}
+
+			archive_entry_free(entry);
 		}
-		if (closedir(dir) < 0) {
-			perror("closedir() failed");
-			goto out10;
-		}
-	} else {
-		perror("opendir() failed");
+		free(filename);
+	}
+
+	if (closedir(dir) < 0) {
+		perror("closedir() failed");
 		goto out10;
 	}
 
