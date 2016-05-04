@@ -243,8 +243,9 @@ int main(int argc, char **argv) {
 	}
 
 	/* read the serial number from key */
-	if ((rc = yk_get_serial(yk, 0, 0, &serial)) < 0) {
+	if (yk_get_serial(yk, 0, 0, &serial) == 0) {
 		perror("yk_get_serial() failed");
+		rc = EXIT_FAILURE;
 		goto out30;
 	}
 
