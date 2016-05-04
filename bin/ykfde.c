@@ -59,6 +59,42 @@ const static struct option options_long[] = {
 	{ 0, 0, 0, 0 }
 };
 
+char * ask_factor(const char * text) {
+	struct termios tp, tp_save;
+	char * factor = NULL;
+	size_t len;
+	ssize_t readlen;
+
+	/* get terminal properties */
+	if (tcgetattr(STDIN_FILENO, &tp) < 0) {
+		fprintf(stderr, "Failed reading terminal attributes. Not on terminal?\n");
+		return NULL;
+	}
+
+	tp_save = tp;
+
+	/* disable echo on terminal */
+	tp.c_lflag &= ~ECHO;
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tp) < 0) {
+		fprintf(stderr, "Failed setting terminal attributes.\n");
+		return NULL;
+	}
+
+	printf("Please give %s:", text);
+	readlen = getline(&factor, &len, stdin);
+	factor[readlen - 1] = '\0';
+	putchar('\n');
+
+	/* restore terminal */
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &tp_save) < 0) {
+		fprintf(stderr, "Failed setting terminal attributes.\n");
+		free(factor);
+		return NULL;
+	}
+
+	return factor;
+}
+
 int main(int argc, char **argv) {
 	unsigned int version = 0, help = 0;
 	char challenge_old[CHALLENGELEN + 1],
@@ -72,11 +108,8 @@ int main(int argc, char **argv) {
 		challengefiletmpname[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 7 /* -XXXXXX */ + 1];
 	int challengefile = 0, challengefiletmp = 0;
 	struct timeval tv;
-	struct termios tp, tp_save;
-	uint8_t have_term = 1;
 	int i;
 	size_t len;
-	ssize_t readlen;
 	int8_t rc = EXIT_FAILURE;
 	/* cryptsetup */
 	const char * device_name;
@@ -87,7 +120,7 @@ int main(int argc, char **argv) {
 	/* keyutils */
 	key_serial_t key;
 	void * payload = NULL;
-	char * second_factor = NULL, * new_2nd_factor = NULL;
+	char * second_factor = NULL, * new_2nd_factor = NULL, * new_2nd_factor_verify = NULL;
 	/* yubikey */
 	YK_KEY * yk;
 	uint8_t yk_slot = SLOT_CHAL_HMAC2;
@@ -96,19 +129,6 @@ int main(int argc, char **argv) {
 	dictionary * ini;
 	char section_ykslot[10 /* unsigned int in char */ + 1 + sizeof(CONFYKSLOT) + 1];
 	char section_luksslot[10 + 1 + sizeof(CONFLUKSSLOT) + 1];
-
-	/* get terminal properties */
-	if (tcgetattr(STDIN_FILENO, &tp) < 0)
-		have_term = 0;
-	tp_save = tp;
-
-	/* disable echo on terminal */
-	tp.c_lflag &= ~ECHO;
-	if (have_term)
-		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tp) < 0) {
-			fprintf(stderr, "Failed setting terminal attributes.\n");
-			goto out0;
-		}
 
 	/* get command line options */
 	while ((i = getopt_long(argc, argv, optstring, options_long, NULL)) != -1)
@@ -124,12 +144,16 @@ int main(int argc, char **argv) {
 				}
 
 				if (optarg == NULL) { /* N */
-					if (have_term == 0)
-						fprintf(stderr, "Warning: Could not disable echo, input will be visible!\n");
-					printf("Please give new second factor:");
-					readlen = getline(&new_2nd_factor, &len, stdin);
-					new_2nd_factor[readlen - 1] = '\0';
-					putchar('\n');
+					if ((new_2nd_factor = ask_factor("new second factor")) == NULL)
+						goto out10;
+
+					if ((new_2nd_factor_verify = ask_factor("new second factor for verification")) == NULL)
+						goto out10;
+
+					if (strcmp(new_2nd_factor, new_2nd_factor_verify) != 0) {
+						fprintf(stderr, "Verification failed, given strings do not match.\n");
+						goto out10;
+					}
 				} else { /* n */
 					new_2nd_factor = strdup(optarg);
 					memset(optarg, '*', strlen(optarg));
@@ -144,12 +168,7 @@ int main(int argc, char **argv) {
 				}
 
 				if (optarg == NULL) { /* S */
-					if (have_term == 0)
-						fprintf(stderr, "Warning: Could not disable echo, input will be visible!\n");
-					printf("Please give second factor:");
-					readlen = getline(&second_factor, &len, stdin);
-					second_factor[readlen - 1] = '\0';
-					putchar('\n');
+					second_factor = ask_factor("second factor");
 				} else { /* s */
 					second_factor = strdup(optarg);
 					memset(optarg, '*', strlen(optarg));
@@ -159,13 +178,6 @@ int main(int argc, char **argv) {
 			case 'V':
 				version++;
 				break;
-		}
-
-	/* restore terminal */
-	if (have_term)
-		if (tcsetattr(STDIN_FILENO, TCSANOW, &tp_save) < 0) {
-			fprintf(stderr, "Failed setting terminal attributes.\n");
-			goto out10;
 		}
 
 	if (version > 0)
@@ -412,10 +424,10 @@ out10:
 	memset(passphrase_old, 0, PASSPHRASELEN + 1);
 	memset(passphrase_new, 0, PASSPHRASELEN + 1);
 
+	free(new_2nd_factor_verify);
 	free(new_2nd_factor);
 	free(second_factor);
 
-out0:
 	return rc;
 }
 
