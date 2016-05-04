@@ -35,16 +35,15 @@ const static struct option options_long[] = {
 int add_dir(struct archive *archive, const char * path) {
 	struct stat st;
 	struct archive_entry *entry;
-	int8_t rc;
+	int8_t rc = EXIT_FAILURE;
 
 	/* initialize struct stat for directories from root */
-	if ((rc = stat("/", &st)) < 0) {
+	if (stat("/", &st) < 0) {
 		perror("stat() failed");
 		goto out;
 	}
 
 	if ((entry = archive_entry_new()) == NULL) {
-		rc = EXIT_FAILURE;
 		fprintf(stderr, "archive_entry_new() failed");
 		goto out;
 	}
@@ -53,7 +52,6 @@ int add_dir(struct archive *archive, const char * path) {
 	archive_entry_set_filetype(entry, AE_IFDIR);
 	archive_entry_copy_stat(entry, &st);
 	if (archive_write_header(archive, entry) != ARCHIVE_OK) {
-		rc = EXIT_FAILURE;
 		fprintf(stderr, "archive_write_header() failed");
 		goto out;
 	}
@@ -100,25 +98,22 @@ int main(int argc, char **argv) {
 	if (version > 0 || help > 0)
 		return EXIT_SUCCESS;
 
-	if ((rc = fdarchive = mkstemp(cpiotmpfile)) < 0) {
+	if ((fdarchive = mkstemp(cpiotmpfile)) < 0) {
 		perror("mkstemp() failed");
 		goto out10;
 	}
 
 	if ((archive = archive_write_new()) == NULL) {
-		rc = EXIT_FAILURE;
 		fprintf(stderr, "archive_write_new() failed.\n");
 		goto out10;
 	}
 
 	if (archive_write_set_format_cpio_newc(archive) != ARCHIVE_OK) {
-		rc = EXIT_FAILURE;
 		fprintf(stderr, "archive_write_set_format_cpio_newc() failed.\n");
 		goto out10;
 	}
 
 	if (archive_write_open_fd(archive, fdarchive) != ARCHIVE_OK) {
-		rc = EXIT_FAILURE;
 		fprintf(stderr, "archive_write_open_fd() failed.\n");
 		goto out10;
 	}
@@ -130,7 +125,7 @@ int main(int argc, char **argv) {
 		*strstr(path + pathlength, "/") = 0;
 		pathlength = strlen(path) + 1;
 
-		if ((rc = add_dir(archive, path)) < 0) {
+		if (add_dir(archive, path) < 0) {
 			fprintf(stderr, "add_dir() failed");
 			goto out10;
 		}
@@ -143,14 +138,13 @@ int main(int argc, char **argv) {
 			filename = malloc(sizeof(CHALLENGEDIR) + strlen(ent->d_name) + 1);
 			sprintf(filename, CHALLENGEDIR "%s", ent->d_name);
 
-			if ((rc = stat(filename, &st)) < 0) {
+			if (stat(filename, &st) < 0) {
 				perror("stat() failed");
 				goto out10;
 			}
 
 			if (S_ISREG(st.st_mode)) {
 				if ((entry = archive_entry_new()) == NULL) {
-					rc = EXIT_FAILURE;
 					fprintf(stderr, "archive_entry_new() failed.\n");
 					goto out10;
 				}
@@ -162,34 +156,33 @@ int main(int argc, char **argv) {
 				archive_entry_set_perm(entry, 0644);
 
 				if (archive_write_header(archive, entry) != ARCHIVE_OK) {
-					rc = EXIT_FAILURE;
 					fprintf(stderr, "archive_write_header() failed");
 					goto out10;
 				}
 
-				if ((rc = fdfile = open(filename, O_RDONLY)) < 0) {
+				if ((fdfile = open(filename, O_RDONLY)) < 0) {
 					perror("open() failed");
 					goto out10;
 				}
 
-				if ((rc = len = read(fdfile, buff, sizeof(buff))) < 0) {
+				if ((len = read(fdfile, buff, sizeof(buff))) < 0) {
 					perror("read() failed");
 					goto out10;
 				}
 
 				while (len > 0) {
-					if (( rc = archive_write_data(archive, buff, len)) < 0) {
+					if (archive_write_data(archive, buff, len) < 0) {
 						fprintf(stderr, "archive_write_data() failed");
 						goto out10;
 					}
 
-					if ((rc = len = read(fdfile, buff, sizeof(buff))) < 0) {
+					if ((len = read(fdfile, buff, sizeof(buff))) < 0) {
 						perror("read() failed");
 						goto out10;
 					}
 				}
 
-				if ((rc = close(fdfile)) < 0) {
+				if (close(fdfile) < 0) {
 					perror("close() failed");
 					goto out10;
 				}
@@ -198,34 +191,31 @@ int main(int argc, char **argv) {
 			}
 			free(filename);
 		}
-		if ((rc = closedir(dir)) < 0) {
+		if (closedir(dir) < 0) {
 			perror("closedir() failed");
 			goto out10;
 		}
 	} else {
-		rc = EXIT_FAILURE;
 		perror("opendir() failed");
 		goto out10;
 	}
 
 	if (archive_write_close(archive) != ARCHIVE_OK) {
-		rc = EXIT_FAILURE;
 		fprintf(stderr, "archive_write_close() failed");
 		goto out10;
 	}
 
 	if (archive_write_free(archive) != ARCHIVE_OK) {
-		rc = EXIT_FAILURE;
 		fprintf(stderr, "archive_write_free() failed");
 		goto out10;
 	}
 
-	if (access(CPIOFILE, F_OK) == 0 && (rc = unlink(CPIOFILE)) < 0) {
+	if (access(CPIOFILE, F_OK) == 0 && unlink(CPIOFILE) < 0) {
 		perror("unkink() failed");
 		goto out10;
 	}
 
-	if ((rc = rename(cpiotmpfile, CPIOFILE)) < 0) {
+	if (rename(cpiotmpfile, CPIOFILE) < 0) {
 		perror("rename() failed");
 		goto out10;
 	}
