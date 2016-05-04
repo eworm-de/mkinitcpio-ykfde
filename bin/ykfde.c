@@ -146,14 +146,15 @@ int main(int argc, char **argv) {
 	}
 
 	/* init and open first Yubikey */
-	if ((rc = yk_init()) < 0) {
+	if (yk_init() == 0) {
 		perror("yk_init() failed");
+		rc = EXIT_FAILURE;
 		goto out20;
 	}
 
 	if ((yk = yk_open_first_key()) == NULL) {
-		rc = EXIT_FAILURE;
 		fprintf(stderr, "No Yubikey available.\n");
+		rc = EXIT_FAILURE;
 		goto out30;
 	}
 
