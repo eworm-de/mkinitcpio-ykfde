@@ -101,7 +101,7 @@ static int try_answer(YK_KEY * yk, uint8_t slot, const char * ask_file, char * c
 
 	if (key > 0) {
 		/* if we have a key id we have a key - so this should succeed */
-		if ((rc = keyctl_read_alloc(key, &payload)) < 0) {
+		if (keyctl_read_alloc(key, &payload) < 0) {
 			perror("Failed reading payload from key");
 			goto out1;
 		}
@@ -118,7 +118,6 @@ static int try_answer(YK_KEY * yk, uint8_t slot, const char * ask_file, char * c
 			CHALLENGELEN, (unsigned char *) challenge,
 			RESPONSELEN, (unsigned char *) response) == 0) {
 		perror("yk_challenge_response() failed");
-		rc = EXIT_FAILURE;
 		goto out1;
 	}
 	yubikey_hex_encode((char *) passphrase, (char *) response, SHA1_DIGEST_SIZE);
@@ -137,20 +136,16 @@ static int try_answer(YK_KEY * yk, uint8_t slot, const char * ask_file, char * c
 	}
 
 	if ((ini = iniparser_load(ask_file)) == NULL) {
-		rc = EXIT_FAILURE;
 		perror("cannot parse file");
 		goto out1;
 	}
 
 	ask_message = iniparser_getstring(ini, "Ask:Message", NULL);
 
-	if (strncmp(ask_message, ASK_MESSAGE, strlen(ASK_MESSAGE)) != 0) {
-		rc = EXIT_FAILURE;
+	if (strncmp(ask_message, ASK_MESSAGE, strlen(ASK_MESSAGE)) != 0)
 		goto out2;
-	}
 
 	if ((ask_socket = iniparser_getstring(ini, "Ask:Socket", NULL)) == NULL) {
-		rc = EXIT_FAILURE;
 		perror("Could not get socket name");
 		goto out2;
 	}
@@ -158,13 +153,11 @@ static int try_answer(YK_KEY * yk, uint8_t slot, const char * ask_file, char * c
 	sprintf(passphrase_askpass, "+%s", passphrase);
 
 	if ((fd_askpass = socket(AF_UNIX, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0)) < 0) {
-		rc = EXIT_FAILURE;
 		perror("socket() failed");
 		goto out2;
 	}
 
 	if (send_on_socket(fd_askpass, ask_socket, passphrase_askpass, PASSPHRASELEN + 1) < 0) {
-		rc = EXIT_FAILURE;
 		perror("send_on_socket() failed");
 		goto out3;
 	}
@@ -212,7 +205,6 @@ int main(int argc, char **argv) {
 
 	if ((pidfile = fopen(PID_PATH, "w")) != NULL) {
 		if (fprintf(pidfile, "%d", getpid()) < 0) {
-			rc = EXIT_FAILURE;
 			perror("Failed writing pid");
 			fclose(pidfile);
 			goto out10;
@@ -233,20 +225,17 @@ int main(int argc, char **argv) {
 	/* init and open first Yubikey */
 	if (yk_init() == 0) {
 		perror("yk_init() failed");
-		rc = EXIT_FAILURE;
 		goto out10;
 	}
 
 	if ((yk = yk_open_first_key()) == NULL) {
 		perror("yk_open_first_key() failed");
-		rc = EXIT_FAILURE;
 		goto out20;
 	}
 
 	/* read the serial number from key */
 	if (yk_get_serial(yk, 0, 0, &serial) == 0) {
 		perror("yk_get_serial() failed");
-		rc = EXIT_FAILURE;
 		goto out30;
 	}
 
@@ -254,17 +243,16 @@ int main(int argc, char **argv) {
 
 	/* check if challenge file exists */
 	if (access(challengefilename, R_OK) == -1) {
-		rc = EXIT_FAILURE;
 		goto out30;
 	}
 
 	/* read challenge from file */
-	if ((rc = challengefile = open(challengefilename, O_RDONLY)) < 0) {
+	if ((challengefile = open(challengefilename, O_RDONLY)) < 0) {
 		perror("Failed opening challenge file for reading");
 		goto out30;
 	}
 
-	if ((rc = read(challengefile, challenge, CHALLENGELEN)) < 0) {
+	if (read(challengefile, challenge, CHALLENGELEN) < 0) {
 		perror("Failed reading challenge from file");
 		goto out40;
 	}
@@ -296,7 +284,7 @@ int main(int argc, char **argv) {
 	}
 
 	/* change to directory so we do not have to assemble complete/absolute path */
-	if ((rc = chdir(ASK_PATH)) != 0) {
+	if (chdir(ASK_PATH) != 0) {
 		perror("chdir() failed");
 		goto out40;
 	}
@@ -310,7 +298,6 @@ int main(int argc, char **argv) {
 			}
 		}
 	} else {
-		rc = EXIT_FAILURE;
 		perror ("opendir() failed");
 		goto out50;
 	}
