@@ -168,7 +168,7 @@ int main(int argc, char **argv) {
 				}
 
 				if (optarg == NULL) { /* S */
-					second_factor = ask_factor("second factor");
+					second_factor = ask_factor("current second factor");
 				} else { /* s */
 					second_factor = strdup(optarg);
 					memset(optarg, '*', strlen(optarg));
