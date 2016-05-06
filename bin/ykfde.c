@@ -59,7 +59,7 @@ const static struct option options_long[] = {
 	{ 0, 0, 0, 0 }
 };
 
-char * ask_factor(const char * text) {
+char * ask_secret(const char * text) {
 	struct termios tp, tp_save;
 	char * factor = NULL;
 	size_t len;
@@ -117,6 +117,7 @@ int main(int argc, char **argv) {
 	struct crypt_device *cryptdevice;
 	crypt_status_info cryptstatus;
 	crypt_keyslot_info cryptkeyslot;
+	char * passphrase = NULL;
 	/* keyutils */
 	key_serial_t key;
 	void * payload = NULL;
@@ -144,10 +145,10 @@ int main(int argc, char **argv) {
 				}
 
 				if (optarg == NULL) { /* N */
-					if ((new_2nd_factor = ask_factor("new second factor")) == NULL)
+					if ((new_2nd_factor = ask_secret("new second factor")) == NULL)
 						goto out10;
 
-					if ((new_2nd_factor_verify = ask_factor("new second factor for verification")) == NULL)
+					if ((new_2nd_factor_verify = ask_secret("new second factor for verification")) == NULL)
 						goto out10;
 
 					if (strcmp(new_2nd_factor, new_2nd_factor_verify) != 0) {
@@ -168,7 +169,7 @@ int main(int argc, char **argv) {
 				}
 
 				if (optarg == NULL) { /* S */
-					second_factor = ask_factor("current second factor");
+					second_factor = ask_secret("current second factor");
 				} else { /* s */
 					second_factor = strdup(optarg);
 					memset(optarg, '*', strlen(optarg));
@@ -374,7 +375,11 @@ int main(int argc, char **argv) {
 			goto out60;
 		}
 	} else { /* ck == CRYPT_SLOT_INACTIVE */
-		if (crypt_keyslot_add_by_passphrase(cryptdevice, luks_slot, NULL, 0,
+		if ((passphrase = ask_secret("existing LUKS passphrase")) == NULL)
+			goto out60;
+
+		if (crypt_keyslot_add_by_passphrase(cryptdevice, luks_slot,
+				passphrase, strlen(passphrase),
 				passphrase_new, PASSPHRASELEN) < 0) {
 			fprintf(stderr, "Could not add passphrase for key slot %d.\n", luks_slot);
 			goto out60;
@@ -425,6 +430,7 @@ out10:
 	memset(passphrase_old, 0, PASSPHRASELEN + 1);
 	memset(passphrase_new, 0, PASSPHRASELEN + 1);
 
+	free(passphrase);
 	free(new_2nd_factor_verify);
 	free(new_2nd_factor);
 	free(second_factor);
