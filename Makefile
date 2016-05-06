@@ -15,7 +15,7 @@ all: bin/ykfde bin/ykfde-cpio udev/ykfde README.html README-mkinitcpio.html READ
 bin/ykfde: bin/ykfde.c config.h version.h
 	$(MAKE) -C bin ykfde
 
-bin/ykfde-cpio: bin/ykfde-cpio.c config.h
+bin/ykfde-cpio: bin/ykfde-cpio.c config.h version.h
 	$(MAKE) -C bin ykfde-cpio
 
 udev/ykfde: udev/ykfde.c config.h
