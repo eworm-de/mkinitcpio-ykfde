@@ -1,13 +1,13 @@
 Full disk encryption with Yubikey (Yubico key) for dracut
 =========================================================
 
-This allows to automatically unlock a LUKS encrypted hard disk from `systemd`-
-enabled initramfs.
+This enables you to automatically unlock a LUKS encrypted filesystem from
+a `systemd`-enabled initramfs.
 
 Requirements
 ------------
 
-To compile and use yubikey full disk encryption you need:
+To compile and use Yubikey full disk encryption you need:
 
 * libyubikey-devel
 * ykpers-devel
@@ -17,6 +17,9 @@ To compile and use yubikey full disk encryption you need:
 * python-markdown
 * systemd-devel
 * keyutils-libs-devel
+
+Additionally you will need to have `make` and `pkg-config` installed to
+successfully compile.
 
 Build and install
 -----------------
@@ -34,7 +37,9 @@ Build command is followed by:
 
 > make install-dracut
 
-This will place files to their desired places in filesystem.
+This will place the files in their desired places in the filesystem.
+Keep in mind that you need `root` privileges for installation, so switch
+user or prepend the last command with `sudo`.
 
 Usage
 -----
@@ -48,10 +53,10 @@ adding a line to `/etc/crypttab`. It should read like:
 
 Usually there is already an entry for your device.
 
-Update `/etc/ykfde.conf` with correct settings. Add `mapping-name` from
-above to `device name` in the `general` section. Then add a new section
-with your key's decimal serial number containing the key slot setting.
-The minimal file should look like this:
+Update `/etc/ykfde.conf` with correct settings. Add the value of
+`mapping-name` from above to `device name` in the `general` section. Then
+add a new section with your key's decimal serial number containing the key
+slot setting. The minimal file should look like this:
 
     [general]
     device name = crypt
@@ -59,21 +64,24 @@ The minimal file should look like this:
     [1234567]
     luks slot = 1
 
-*Be warned*: Do not remove or overwrite your interactive key! Keep that
-for backup and rescue!
+*Be warned*: Do not remove or overwrite your interactive (regular) key!
+Keep that for backup and rescue - LUKS encrypted volumes have a total
+of 8 slots (from 0 to 7).
 
-### key setup
+### Key setup
 
 `ykfde` will read its information from these files and understands some
 additional options. Run `ykfde --help` for details. Then prepare
-the key. Plug it in, make sure it is configured for `HMAC-SHA1`.
-After that run:
+the key. Plug it in and make sure it is configured for `HMAC-SHA1`. This can
+be done with `ykpersonalize` from terminal (package `ykpers`)
+or with GUI application `YubiKey Personalization Tool`. After that, run:
 
 > ykfde
 
 This will store a challenge in `/etc/ykfde.d/` and add a new slot to
-your LUKS device. When `ykfde` asks for a passphrase it requires a valid
-passphrase from available slot.
+your LUKS device based on the `/etc/ykfde.conf` configuration. When
+`ykfde` asks for a passphrase it requires a valid passphrase from a
+previously available slot.
 
 Alternatively, adding a key with second factor (`foo` in this example)
 is as easy:
@@ -101,7 +109,7 @@ Every time you update a challenge and/or a second factor run:
 
 > ykfde-cpio
 
-This will write a cpio archive `/boot/ykfde-challenges.img` containing
+This will write a cpio archive to `/boot/ykfde-challenges.img` containing
 your current challenges. Enable systemd service `ykfde` to do this
 automatically on every boot:
 
@@ -113,14 +121,14 @@ Build the initramfs:
 
 > dracut -f
 
-### boot loader
+### Boot loader
 
-Update you `grub` configuration by running:
+Update your `grub` configuration by running:
 
 > grub2-mkconfig -o /boot/grub/grub.cfg
 
 This will add new boot entry that loads the challenges. With other boot
 loaders make sure to load the cpio archive `/boot/ykfde-challenges.img`
-as additional initramfs.
+as an additional initramfs.
 
 Reboot and have fun!
