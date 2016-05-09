@@ -1,13 +1,13 @@
 Full disk encryption with Yubikey (Yubico key) for mkinitcpio
 =============================================================
 
-This allows to automatically unlock a LUKS encrypted hard disk from `systemd`-
+This enables you to automatically unlock a LUKS encrypted hard disk from a `systemd`-
 enabled initramfs.
 
 Requirements
 ------------
 
-To compile and use yubikey full disk encryption you need:
+To compile and use YubiKey full disk encryption you need:
 
 * [yubikey-personalization](https://github.com/Yubico/yubikey-personalization)
 * [iniparser](http://ndevilla.free.fr/iniparser/)
@@ -18,13 +18,13 @@ To compile and use yubikey full disk encryption you need:
 * [markdown](http://daringfireball.net/projects/markdown/) (HTML documentation)
 * [libarchive](http://www.libarchive.org/) (Update challenge on boot)
 
-Additionally it is expected to have `make` and `pkg-config` around to
+Additionally you will need to have `make` and `pkg-config` installed to
 successfully compile.
 
 Build and install
 -----------------
 
-Building and installing is very easy. Just run:
+Building and installing is very easy. As sudo, just run:
 
 > make
 
@@ -32,7 +32,7 @@ followed by:
 
 > make install-mkinitcpio
 
-This will place files to their desired places in filesystem.
+This will place the files in their desired places in the filesystem.
 
 Usage
 -----
@@ -44,9 +44,11 @@ adding a line to `/etc/crypttab.initramfs`. It should read like:
 
 > `mapping-name` /dev/`LUKS-device` -
 
-Usually there is already an entry for your device.
+Usually there is already an entry for your device. If you don't already
+have a systemd enable initramfs, you will need to create this file from
+scratch.
 
-Update `/etc/ykfde.conf` with correct settings. Add `mapping-name` from
+Update `/etc/ykfde.conf` with correct settings. Add the `mapping-name` from
 above to `device name` in the `general` section. Then add a new section
 with your key's decimal serial number containing the key slot setting.
 The minimal file should look like this:
@@ -57,23 +59,25 @@ The minimal file should look like this:
     [1234567]
     luks slot = 1
 
-*Be warned*: Do not remove or overwrite your interactive key! Keep that
-for backup and rescue!
+*Be warned*: Do not remove or overwrite your interactive (regular) key! Keep that
+for backup and rescue - LUKS encrypted volumes have a total of 8 slots.
 
-### key setup
+### Key setup
 
 `ykfde` will read its information from these files and understands some
 additional options. Run `ykfde --help` for details. Then prepare
-the key. Plug it in, make sure it is configured for `HMAC-SHA1`.
-After that run:
+the key. Plug it in, make sure it is configured for `HMAC-SHA1` (this can
+be done with `yubikey-personalization-gui`).
+After that, run:
 
 > ykfde
 
 This will store a challenge in `/etc/ykfde.d/` and add a new slot to
-your LUKS device. When `ykfde` asks for a passphrase it requires a valid
-passphrase from available slot.
+your LUKS device based on the `/etc/ykfde.conf` configuration.
+When `ykfde` asks for a passphrase it requires a valid passphrase from a previous
+available slot.
 
-Alternatively, adding a key with second factor (`foo` in this example)
+Alternatively, adding an additional key with second factor (`foo` in this example)
 is as easy:
 
 > ykfde --new-2nd-factor foo
@@ -99,7 +103,7 @@ Every time you update a challenge and/or a second factor run:
 
 > ykfde-cpio
 
-This will write a cpio archive `/boot/ykfde-challenges.img` containing
+This will write a cpio archive to `/boot/ykfde-challenges.img` containing
 your current challenges. Enable systemd service `ykfde` to do this
 automatically on every boot:
 
@@ -107,20 +111,26 @@ automatically on every boot:
 
 ### mkinitcpio hook `ykfde`
 
-Last add `ykfde` to your hook list in `/etc/mkinitcpio.conf`. You should
+Lastly, add `ykfde` to your hook list in `/etc/mkinitcpio.conf`. You should
 already have `systemd` and `sd-encrypt` there as a `systemd`-enabled
-initramfs is prerequisite. Now rebuild your initramfs with:
+initramfs is prerequisite. If you are using the `lvm2` hook, you'll
+need to switch to using `sd-lvm2` instead. A working example config is
+as follows:
+
+> HOOKS=base udev autodetect systemd sd-encrypt modconf ykfde block encrypt sd-lvm2 filesystems keyboard fsck shutdown 
+
+Now rebuild your initramfs with:
 
 > mkinitcpio -p linux
 
-### boot loader
+### Boot loader
 
-Update you `grub` configuration by running:
+Update your `grub` configuration by running:
 
 > grub-mkconfig -o /boot/grub/grub.cfg
 
 This will add new boot entry that loads the challenges. With other boot
 loaders make sure to load the cpio archive `/boot/ykfde-challenges.img`
-as additional initramfs.
+as an additional initramfs.
 
 Reboot and have fun!
