@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
 	 * We expect this to be active (or busy). It is the actual root device, no? */
 	cryptstatus = crypt_status(cryptdevice, device_name);
 	if (cryptstatus != CRYPT_ACTIVE && cryptstatus != CRYPT_BUSY) {
-                fprintf(stderr, "Device %s is invalid or inactive.\n", device_name);
+		fprintf(stderr, "Device %s is invalid or inactive.\n", device_name);
 		goto out50;
 	}
 
