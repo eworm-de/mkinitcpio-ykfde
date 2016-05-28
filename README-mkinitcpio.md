@@ -13,8 +13,10 @@ To compile and use yubikey full disk encryption you need:
 * [iniparser](http://ndevilla.free.fr/iniparser/)
 * [systemd](http://www.freedesktop.org/wiki/Software/systemd/)
 * [cryptsetup](http://code.google.com/p/cryptsetup/)
-* keyutils and linux with `CONFIG_KEYS`
+* keyutils and linux with `CONFIG_KEYS` enabled
 * [mkinitcpio](https://projects.archlinux.org/mkinitcpio.git/)
+* sleep (from [coreutils](http://www.gnu.org/software/coreutils)) and
+  pkill (from [procps-ng](https://gitlab.com/procps-ng/procps))
 * [markdown](http://daringfireball.net/projects/markdown/) (HTML documentation)
 * [libarchive](http://www.libarchive.org/) (Update challenge on boot)
 
