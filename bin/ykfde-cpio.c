@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
 		goto out10;
 	}
 
-        while (1) {
+	while (1) {
 		path = strdup(CHALLENGEDIR + 1);
 		if (strstr(path + pathlength, "/") == NULL)
 			break;

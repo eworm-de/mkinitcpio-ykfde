@@ -60,21 +60,21 @@ void received_signal(int signal) {
 }
 
 static int send_on_socket(int fd, const char *socket_name, const void *packet, size_t size) {
-        union {
-                struct sockaddr sa;
-                struct sockaddr_un un;
-        } sa = {
-                .un.sun_family = AF_UNIX,
-        };
+	union {
+		struct sockaddr sa;
+		struct sockaddr_un un;
+	} sa = {
+		.un.sun_family = AF_UNIX,
+	};
 
-        strncpy(sa.un.sun_path, socket_name, sizeof(sa.un.sun_path));
+	strncpy(sa.un.sun_path, socket_name, sizeof(sa.un.sun_path));
 
-        if (sendto(fd, packet, size, MSG_NOSIGNAL, &sa.sa, offsetof(struct sockaddr_un, sun_path) + strlen(socket_name)) < 0) {
-                perror("sendto() failed");
-                return EXIT_FAILURE;
-        }
+	if (sendto(fd, packet, size, MSG_NOSIGNAL, &sa.sa, offsetof(struct sockaddr_un, sun_path) + strlen(socket_name)) < 0) {
+		perror("sendto() failed");
+		return EXIT_FAILURE;
+	}
 
-        return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
 
 static int try_answer(YK_KEY * yk, uint8_t slot, const char * ask_file, char * challenge) {
@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
 	/* read challenge */
 	char challenge[CHALLENGELEN + 1];
 	char challengefilename[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 1];
-        int challengefile;
+	int challengefile;
 	/* read dir */
 	DIR * dir;
 	struct dirent * ent;
