@@ -11,15 +11,11 @@ build() {
 		add_systemd_unit cryptsetup-pre.target
 		add_systemd_unit ykfde-2f.service
 		add_symlink /usr/lib/systemd/system/sysinit.target.wants/ykfde-2f.service ../ykfde-2f.service
-		add_file /usr/lib/systemd/scripts/ykfde-2f
+		add_systemd_unit ykfde-notify.service
+		add_symlink /usr/lib/systemd/system/sysinit.target.wants/ykfde-notify.service ../ykfde-notify.service
 		add_binary systemd-ask-password
-
-		# shell and commands
-		local applet
-		add_binary /usr/lib/initcpio/busybox /usr/bin/busybox
-		for applet in cat kill sh sleep; do
-			add_symlink "/usr/bin/${applet}" busybox
-		done
+		add_binary pkill
+		add_binary sleep
 	fi
 }
 
