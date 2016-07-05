@@ -21,10 +21,12 @@ install() {
 	if egrep -qi 'second factor = (yes|true|1)' /etc/ykfde.conf; then
 		inst_simple /usr/lib/systemd/system/cryptsetup-pre.target
 		inst_simple /usr/lib/systemd/system/ykfde-2f.service
-		ln_r $systemdsystemunitdir/ykfde-2f.service  $systemdsystemunitdir/sysinit.target.wants/ykfde-2f.service
-		inst_simple /usr/lib/systemd/scripts/ykfde-2f
-		inst_simple /usr/bin/keyctl
+		ln_r $systemdsystemunitdir/ykfde-2f.service $systemdsystemunitdir/sysinit.target.wants/ykfde-2f.service
+		inst_simple /usr/lib/systemd/system/ykfde-notify.service
+		ln_r $systemdsystemunitdir/ykfde-notify.service $systemdsystemunitdir/sysinit.target.wants/ykfde-notify.service
 		inst_simple /usr/bin/systemd-ask-password
+		inst_simple /usr/bin/pkill
+		inst_simple /usr/bin/sleep
 
 	fi
 
