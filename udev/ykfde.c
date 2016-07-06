@@ -77,8 +77,40 @@ static int send_on_socket(int fd, const char *socket_name, const void *packet, s
 	return EXIT_SUCCESS;
 }
 
-static int try_answer(YK_KEY * yk, uint8_t slot, const char * ask_file, char * challenge) {
+static YK_KEY * yk_open_and_check(const unsigned int expected, unsigned int * serial) {
+	YK_KEY * yk;
+
+	if ((yk = yk_open_first_key()) == NULL) {
+		perror("yk_open_first_key() failed");
+		goto error;
+	}
+
+	if (serial != NULL) {
+		/* read the serial number from key */
+		if (yk_get_serial(yk, 0, 0, serial) == 0) {
+			perror("yk_get_serial() failed");
+			goto error;
+		}
+
+		if (expected > 0 && expected != *serial) {
+			fprintf(stderr, "Opened Yubikey with unexpected serial number (%d != %d)... ", expected, *serial);
+			goto error;
+		}
+	}
+
+	return yk;
+
+error:
+	/* release Yubikey */
+	if (yk != NULL && yk_release() == 0)
+		perror("yk_release() failed");
+
+	return NULL;
+}
+
+static int try_answer(const unsigned int serial, uint8_t slot, const char * ask_file, char * challenge) {
 	int8_t rc = EXIT_FAILURE;
+	YK_KEY * yk;
 	dictionary * ini;
 	const char * ask_message, * ask_socket;
 	int fd_askpass;
@@ -113,6 +145,12 @@ static int try_answer(YK_KEY * yk, uint8_t slot, const char * ask_file, char * c
 		free(payload);
 	}
 
+	/* open Yubikey and check serial */
+	if ((yk = yk_open_and_check(serial, NULL)) == NULL) {
+		fprintf(stderr, "yk_open_and_check() failed");
+		goto out1;
+	}
+
 	/* do challenge/response and encode to hex */
 	if (yk_challenge_response(yk, slot, true,
 			CHALLENGELEN, (unsigned char *) challenge,
@@ -120,6 +158,13 @@ static int try_answer(YK_KEY * yk, uint8_t slot, const char * ask_file, char * c
 		perror("yk_challenge_response() failed");
 		goto out1;
 	}
+
+	/* close Yubikey */
+	if (yk_close_key(yk) == 0) {
+		perror("yk_close_key() failed");
+		goto out1;
+	}
+
 	yubikey_hex_encode((char *) passphrase, (char *) response, SHA1_DIGEST_SIZE);
 
 	/* add key to kernel key store */
@@ -228,15 +273,16 @@ int main(int argc, char **argv) {
 		goto out10;
 	}
 
-	if ((yk = yk_open_first_key()) == NULL) {
-		perror("yk_open_first_key() failed");
-		goto out20;
+	/* open Yubikey and get serial */
+	if ((yk = yk_open_and_check(0, &serial)) == NULL) {
+		fprintf(stderr, "yk_open_and_check() failed");
+		goto out30;
 	}
 
-	/* read the serial number from key */
-	if (yk_get_serial(yk, 0, 0, &serial) == 0) {
-		perror("yk_get_serial() failed");
-		goto out30;
+	/* close Yubikey */
+	if (yk_close_key(yk) == 0) {
+		perror("yk_close_key() failed");
+		goto out20;
 	}
 
 	sprintf(challengefilename, CHALLENGEDIR "/challenge-%d", serial);
@@ -293,7 +339,7 @@ int main(int argc, char **argv) {
 	if ((dir = opendir(ASK_PATH)) != NULL) {
 		while ((ent = readdir(dir)) != NULL) {
 			if (strncmp(ent->d_name, "ask.", 4) == 0) {
-				if ((rc = try_answer(yk, slot, ent->d_name, challenge)) == EXIT_SUCCESS)
+				if ((rc = try_answer(serial, slot, ent->d_name, challenge)) == EXIT_SUCCESS)
 					goto out50;
 			}
 		}
@@ -308,7 +354,7 @@ int main(int argc, char **argv) {
 	sleep(90);
 
 	/* try again, but for key store this time */
-	rc = try_answer(yk, slot, NULL, challenge);
+	rc = try_answer(serial, slot, NULL, challenge);
 
 out50:
 	/* close dir */
@@ -324,7 +370,7 @@ out40:
 
 out30:
 	/* close Yubikey */
-	if (yk_close_key(yk) == 0)
+	if (yk != NULL && yk_close_key(yk) == 0)
 		perror("yk_close_key() failed");
 
 out20:
