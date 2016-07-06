@@ -282,7 +282,7 @@ int main(int argc, char **argv) {
 	/* close Yubikey */
 	if (yk_close_key(yk) == 0) {
 		perror("yk_close_key() failed");
-		goto out20;
+		goto out30;
 	}
 
 	sprintf(challengefilename, CHALLENGEDIR "/challenge-%d", serial);
@@ -373,7 +373,6 @@ out30:
 	if (yk != NULL && yk_close_key(yk) == 0)
 		perror("yk_close_key() failed");
 
-out20:
 	/* release Yubikey */
 	if (yk_release() == 0)
 		perror("yk_release() failed");
