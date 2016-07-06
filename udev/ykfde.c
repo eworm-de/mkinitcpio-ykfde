@@ -93,7 +93,7 @@ static YK_KEY * yk_open_and_check(const unsigned int expected, unsigned int * se
 		}
 
 		if (expected > 0 && expected != *serial) {
-			fprintf(stderr, "Opened Yubikey with unexpected serial number (%d != %d)... ", expected, *serial);
+			fprintf(stderr, "Opened Yubikey with unexpected serial number (%d != %d)...\n", expected, *serial);
 			goto error;
 		}
 	}
@@ -101,9 +101,10 @@ static YK_KEY * yk_open_and_check(const unsigned int expected, unsigned int * se
 	return yk;
 
 error:
-	/* release Yubikey */
-	if (yk != NULL && yk_release() == 0)
-		perror("yk_release() failed");
+	/* close Yubikey */
+	if (yk != NULL)
+		if (yk_close_key(yk) == 0)
+			perror("yk_close_key() failed");
 
 	return NULL;
 }
@@ -147,7 +148,7 @@ static int try_answer(const unsigned int serial, uint8_t slot, const char * ask_
 
 	/* open Yubikey and check serial */
 	if ((yk = yk_open_and_check(serial, NULL)) == NULL) {
-		fprintf(stderr, "yk_open_and_check() failed");
+		fprintf(stderr, "yk_open_and_check() failed\n");
 		goto out1;
 	}
 
@@ -275,7 +276,7 @@ int main(int argc, char **argv) {
 
 	/* open Yubikey and get serial */
 	if ((yk = yk_open_and_check(0, &serial)) == NULL) {
-		fprintf(stderr, "yk_open_and_check() failed");
+		fprintf(stderr, "yk_open_and_check() failed\n");
 		goto out30;
 	}
 
@@ -370,8 +371,9 @@ out40:
 
 out30:
 	/* close Yubikey */
-	if (yk != NULL && yk_close_key(yk) == 0)
-		perror("yk_close_key() failed");
+	if (yk != NULL)
+		if (yk_close_key(yk) == 0)
+			perror("yk_close_key() failed");
 
 	/* release Yubikey */
 	if (yk_release() == 0)
