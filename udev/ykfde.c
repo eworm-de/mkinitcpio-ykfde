@@ -157,7 +157,7 @@ static int try_answer(const unsigned int serial, uint8_t slot, const char * ask_
 			CHALLENGELEN, (unsigned char *) challenge,
 			RESPONSELEN, (unsigned char *) response) == 0) {
 		perror("yk_challenge_response() failed");
-		goto out1;
+		goto out2;
 	}
 
 	/* close Yubikey */
@@ -165,6 +165,7 @@ static int try_answer(const unsigned int serial, uint8_t slot, const char * ask_
 		perror("yk_close_key() failed");
 		goto out1;
 	}
+	yk = NULL;
 
 	yubikey_hex_encode((char *) passphrase, (char *) response, SHA1_DIGEST_SIZE);
 
@@ -189,32 +190,38 @@ static int try_answer(const unsigned int serial, uint8_t slot, const char * ask_
 	ask_message = iniparser_getstring(ini, "Ask:Message", NULL);
 
 	if (strncmp(ask_message, ASK_MESSAGE, strlen(ASK_MESSAGE)) != 0)
-		goto out2;
+		goto out3;
 
 	if ((ask_socket = iniparser_getstring(ini, "Ask:Socket", NULL)) == NULL) {
 		perror("Could not get socket name");
-		goto out2;
+		goto out3;
 	}
 
 	sprintf(passphrase_askpass, "+%s", passphrase);
 
 	if ((fd_askpass = socket(AF_UNIX, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0)) < 0) {
 		perror("socket() failed");
-		goto out2;
+		goto out3;
 	}
 
 	if (send_on_socket(fd_askpass, ask_socket, passphrase_askpass, PASSPHRASELEN + 1) < 0) {
 		perror("send_on_socket() failed");
-		goto out3;
+		goto out4;
 	}
 
 	rc = EXIT_SUCCESS;
 
-out3:
+out4:
 	close(fd_askpass);
 
-out2:
+out3:
 	iniparser_freedict(ini);
+
+out2:
+	/* close Yubikey */
+	if (yk != NULL)
+		if (yk_close_key(yk) == 0)
+			perror("yk_close_key() failed");
 
 out1:
 	/* wipe response (cleartext password!) from memory */
@@ -285,6 +292,7 @@ int main(int argc, char **argv) {
 		perror("yk_close_key() failed");
 		goto out30;
 	}
+	yk = NULL;
 
 	sprintf(challengefilename, CHALLENGEDIR "/challenge-%d", serial);
 
