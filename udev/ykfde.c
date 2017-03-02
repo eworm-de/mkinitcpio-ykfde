@@ -116,16 +116,17 @@ static int try_answer(const unsigned int serial, uint8_t slot, const char * ask_
 	const char * ask_message, * ask_socket;
 	int fd_askpass;
 	char response[RESPONSELEN],
-		passphrase[PASSPHRASELEN + 1],
-		passphrase_askpass[PASSPHRASELEN + 2];
+		askpass[PASSPHRASELEN + 2];
+	char * passphrase = askpass + 1;
 	/* keyutils */
 	key_serial_t key;
 	void * payload = NULL;
 	size_t plen;
 
 	memset(response, 0, RESPONSELEN);
-	memset(passphrase, 0, PASSPHRASELEN + 1);
-	memset(passphrase_askpass, 0, PASSPHRASELEN + 2);
+	memset(askpass, 0, PASSPHRASELEN + 2);
+
+	*askpass = '+';
 
 	/* get second factor from key store
 	 * if this fails it is not critical... possibly we just do not
@@ -197,14 +198,12 @@ static int try_answer(const unsigned int serial, uint8_t slot, const char * ask_
 		goto out3;
 	}
 
-	sprintf(passphrase_askpass, "+%s", passphrase);
-
 	if ((fd_askpass = socket(AF_UNIX, SOCK_DGRAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0)) < 0) {
 		perror("socket() failed");
 		goto out3;
 	}
 
-	if (send_on_socket(fd_askpass, ask_socket, passphrase_askpass, PASSPHRASELEN + 1) < 0) {
+	if (send_on_socket(fd_askpass, ask_socket, askpass, PASSPHRASELEN + 1) < 0) {
 		perror("send_on_socket() failed");
 		goto out4;
 	}
@@ -226,8 +225,7 @@ out2:
 out1:
 	/* wipe response (cleartext password!) from memory */
 	memset(response, 0, RESPONSELEN);
-	memset(passphrase, 0, PASSPHRASELEN + 1);
-	memset(passphrase_askpass, 0, PASSPHRASELEN + 2);
+	memset(askpass, 0, PASSPHRASELEN + 2);
 
 	return rc;
 }
