@@ -23,4 +23,4 @@ No known limitations. Yeah!
 ### Upstream
 
 URL: [GitHub.com](https://github.com/eworm-de/mkinitcpio-ykfde)  
-Mirror: [eworm.de](http://git.eworm.de/cgit.cgi/mkinitcpio-ykfde/)
+Mirror: [eworm.de](https://git.eworm.de/cgit.cgi/mkinitcpio-ykfde/)
