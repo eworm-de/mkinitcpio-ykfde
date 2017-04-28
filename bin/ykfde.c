@@ -64,32 +64,38 @@ char * ask_secret(const char * text) {
 	char * factor = NULL;
 	size_t len;
 	ssize_t readlen;
+	bool onTerminal = true;
 
 	/* get terminal properties */
 	if (tcgetattr(STDIN_FILENO, &tp) < 0) {
-		fprintf(stderr, "Failed reading terminal attributes. Not on terminal?\n");
-		return NULL;
+		onTerminal = false;
+		tp_save = tp;
 	}
 
-	tp_save = tp;
 
 	/* disable echo on terminal */
-	tp.c_lflag &= ~ECHO;
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tp) < 0) {
-		fprintf(stderr, "Failed setting terminal attributes.\n");
-		return NULL;
+	if (onTerminal) {
+		tp.c_lflag &= ~ECHO;
+		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tp) < 0) {
+			fprintf(stderr, "Failed setting terminal attributes.\n");
+			return NULL;
+		}
+
+		printf("Please give %s:", text);
 	}
 
-	printf("Please give %s:", text);
 	readlen = getline(&factor, &len, stdin);
 	factor[readlen - 1] = '\0';
-	putchar('\n');
 
-	/* restore terminal */
-	if (tcsetattr(STDIN_FILENO, TCSANOW, &tp_save) < 0) {
-		fprintf(stderr, "Failed setting terminal attributes.\n");
-		free(factor);
-		return NULL;
+	if (onTerminal) {
+		putchar('\n');
+
+		/* restore terminal */
+		if (tcsetattr(STDIN_FILENO, TCSANOW, &tp_save) < 0) {
+			fprintf(stderr, "Failed setting terminal attributes.\n");
+			free(factor);
+			return NULL;
+		}
 	}
 
 	return factor;
