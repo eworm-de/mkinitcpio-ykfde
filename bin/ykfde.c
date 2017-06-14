@@ -69,9 +69,9 @@ char * ask_secret(const char * text) {
 	/* get terminal properties */
 	if (tcgetattr(STDIN_FILENO, &tp) < 0) {
 		onTerminal = false;
+	} else {
 		tp_save = tp;
 	}
-
 
 	/* disable echo on terminal */
 	if (onTerminal) {
@@ -92,7 +92,7 @@ char * ask_secret(const char * text) {
 
 		/* restore terminal */
 		if (tcsetattr(STDIN_FILENO, TCSANOW, &tp_save) < 0) {
-			fprintf(stderr, "Failed setting terminal attributes.\n");
+			fprintf(stderr, "Failed to restore terminal attributes.\n");
 			free(factor);
 			return NULL;
 		}
