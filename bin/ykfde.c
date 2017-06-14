@@ -64,17 +64,14 @@ char * ask_secret(const char * text) {
 	char * factor = NULL;
 	size_t len;
 	ssize_t readlen;
-	bool onTerminal = true;
+	bool onTerminal = false;
 
 	/* get terminal properties */
-	if (tcgetattr(STDIN_FILENO, &tp) < 0) {
-		onTerminal = false;
-	} else {
+	if (tcgetattr(STDIN_FILENO, &tp) == 0) {
+		onTerminal = true;
 		tp_save = tp;
-	}
 
-	/* disable echo on terminal */
-	if (onTerminal) {
+		/* disable echo on terminal */
 		tp.c_lflag &= ~ECHO;
 		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tp) < 0) {
 			fprintf(stderr, "Failed setting terminal attributes.\n");
@@ -87,7 +84,7 @@ char * ask_secret(const char * text) {
 	readlen = getline(&factor, &len, stdin);
 	factor[readlen - 1] = '\0';
 
-	if (onTerminal) {
+	if (onTerminal == true) {
 		putchar('\n');
 
 		/* restore terminal */
