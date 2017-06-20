@@ -131,7 +131,7 @@ static int try_answer(const unsigned int serial, uint8_t slot, const char * ask_
 	/* get second factor from key store
 	 * if this fails it is not critical... possibly we just do not
 	 * use second factor */
-	key = request_key("user", "ykfde-2f", NULL, KEY_SPEC_USER_KEYRING);
+	key = request_key("user", "ykfde-2f", NULL, 0);
 
 	if (key > 0) {
 		/* if we have a key id we have a key - so this should succeed */
