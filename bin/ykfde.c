@@ -264,7 +264,7 @@ int main(int argc, char **argv) {
 
 	if (second_factor == NULL) {
 		/* get second factor from key store */
-		if ((key = request_key("user", "ykfde-2f", NULL, 0)) < 0)
+		if ((key = keyctl_search(KEY_SPEC_USER_KEYRING, "user", "ykfde-2f", 0)) < 0)
 			fprintf(stderr, "Failed requesting key. That's ok if you do not use\n"
 					"second factor. Give it manually if required.\n");
 

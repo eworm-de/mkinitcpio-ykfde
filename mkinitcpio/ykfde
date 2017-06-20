@@ -11,8 +11,8 @@ build() {
 		add_systemd_unit cryptsetup-pre.target
 		add_systemd_unit ykfde-2f.service
 		add_symlink /usr/lib/systemd/system/sysinit.target.wants/ykfde-2f.service ../ykfde-2f.service
-		add_systemd_unit ykfde-notify.service
-		add_symlink /usr/lib/systemd/system/sysinit.target.wants/ykfde-notify.service ../ykfde-notify.service
+		add_systemd_unit ykfde-worker.service
+		add_symlink /usr/lib/systemd/system/sysinit.target.wants/ykfde-worker.service ../ykfde-worker.service
 		add_binary systemd-ask-password
 		add_binary pkill
 		add_binary sleep

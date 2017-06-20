@@ -4,19 +4,13 @@
 # of the GNU General Public License, incorporated herein by reference.
 
 [Unit]
-Description=Notify ykfde about key
+Description=Run ykfde worker
 DefaultDependencies=no
 Before=cryptsetup-pre.target
 Wants=cryptsetup-pre.target
 Requires=ykfde-2f.service
 After=ykfde-2f.service
-ConditionPathExists=/run/ykfde.pid
 
 [Service]
 Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/bin/pkill -USR1 --pidfile /run/ykfde.pid
-# ykfde started from udev needs a moment to set up the key
-# in store. It is out of systemd control, so wait a moment
-# here.
-ExecStart=/usr/bin/sleep 0.2
+ExecStart=/usr/lib/udev/ykfde
