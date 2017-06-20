@@ -22,8 +22,8 @@ install() {
 		inst_simple /usr/lib/systemd/system/cryptsetup-pre.target
 		inst_simple /usr/lib/systemd/system/ykfde-2f.service
 		ln_r $systemdsystemunitdir/ykfde-2f.service $systemdsystemunitdir/sysinit.target.wants/ykfde-2f.service
-		inst_simple /usr/lib/systemd/system/ykfde-notify.service
-		ln_r $systemdsystemunitdir/ykfde-notify.service $systemdsystemunitdir/sysinit.target.wants/ykfde-notify.service
+		inst_simple /usr/lib/systemd/system/ykfde-worker.service
+		ln_r $systemdsystemunitdir/ykfde-worker.service $systemdsystemunitdir/sysinit.target.wants/ykfde-worker.service
 		inst_simple /usr/bin/systemd-ask-password
 		inst_simple /usr/bin/pkill
 		inst_simple /usr/bin/sleep
