@@ -38,11 +38,12 @@ install: install-mkinitcpio
 install-bin: bin/worker bin/ykfde bin/ykfde-cpio
 	$(MAKE) -C bin install
 	$(INSTALL) -D -m0644 conf/ykfde.conf $(DESTDIR)/etc/ykfde.conf
+	$(INSTALL) -d -m0700 $(DESTDIR)/etc/ykfde.d/
+	$(INSTALL) -D -m0644 conf/gitignore $(DESTDIR)/etc/ykfde.d/.gitignore
 	$(INSTALL) -D -m0755 grub/09_linux $(DESTDIR)/etc/grub.d/09_linux
 	$(INSTALL) -D -m0644 systemd/ykfde.service $(DESTDIR)/usr/lib/systemd/system/ykfde.service
 	$(INSTALL) -D -m0644 systemd/ykfde-2f.service $(DESTDIR)/usr/lib/systemd/system/ykfde-2f.service
 	$(INSTALL) -D -m0644 systemd/ykfde-worker.service $(DESTDIR)/usr/lib/systemd/system/ykfde-worker.service
-	$(INSTALL) -d -m0700 $(DESTDIR)/etc/ykfde.d/
 
 install-doc: README.html README-mkinitcpio.html README-dracut.html
 	$(INSTALL) -D -m0644 README.md $(DESTDIR)/usr/share/doc/ykfde/README.md
