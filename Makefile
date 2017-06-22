@@ -10,16 +10,16 @@ VERSION := 0.6.4
 
 .DELETE_ON_ERROR:
 
-all: bin/ykfde bin/ykfde-cpio udev/ykfde README.html README-mkinitcpio.html README-dracut.html
+all: bin/worker bin/ykfde bin/ykfde-cpio README.html README-mkinitcpio.html README-dracut.html
+
+bin/worker: bin/worker.c config.h
+	$(MAKE) -C bin worker
 
 bin/ykfde: bin/ykfde.c config.h version.h
 	$(MAKE) -C bin ykfde
 
 bin/ykfde-cpio: bin/ykfde-cpio.c config.h version.h
 	$(MAKE) -C bin ykfde-cpio
-
-udev/ykfde: udev/ykfde.c config.h
-	$(MAKE) -C udev ykfde
 
 config.h: config.def.h
 	$(CP) config.def.h config.h
@@ -35,9 +35,8 @@ version.h: $(wildcard .git/HEAD .git/index .git/refs/tags/*) Makefile
 
 install: install-mkinitcpio
 
-install-bin: bin/ykfde udev/ykfde
+install-bin: bin/worker bin/ykfde bin/ykfde-cpio
 	$(MAKE) -C bin install
-	$(MAKE) -C udev install
 	$(INSTALL) -D -m0644 conf/ykfde.conf $(DESTDIR)/etc/ykfde.conf
 	$(INSTALL) -D -m0755 grub/09_linux $(DESTDIR)/etc/grub.d/09_linux
 	$(INSTALL) -D -m0644 systemd/ykfde.service $(DESTDIR)/usr/lib/systemd/system/ykfde.service
@@ -65,7 +64,6 @@ install-dracut: install-bin install-doc
 
 clean:
 	$(MAKE) -C bin clean
-	$(MAKE) -C udev clean
 	$(RM) -f README.html README-mkinitcpio.html README-dracut.html version.h
 
 distclean: clean

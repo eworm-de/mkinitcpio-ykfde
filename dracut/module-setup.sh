@@ -14,7 +14,7 @@ install() {
 	inst_rules "$moddir/20-ykfde.rules"
 	inst_hook cmdline 30 "$moddir/parse-mod.sh"
 	inst_simple "$moddir/ykfde.sh" /sbin/ykfde.sh
-	inst_simple /usr/lib/udev/ykfde
+	inst_simple /usr/lib/ykfde/worker
 	inst_simple /etc/ykfde.conf
 
 	# this is required for second factor
