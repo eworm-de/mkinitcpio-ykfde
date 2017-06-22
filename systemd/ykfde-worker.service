@@ -13,4 +13,4 @@ After=ykfde-2f.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/lib/udev/ykfde
+ExecStart=/usr/lib/ykfde/worker

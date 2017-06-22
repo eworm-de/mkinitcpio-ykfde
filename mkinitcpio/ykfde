@@ -2,7 +2,7 @@
 
 build() {
 	# install basic files to initramfs
-	add_binary /usr/lib/udev/ykfde
+	add_binary /usr/lib/ykfde/worker
 	add_file /usr/lib/initcpio/udev/20-ykfde.rules /usr/lib/udev/rules.d/20-ykfde.rules
 	add_file /etc/ykfde.conf
 

@@ -1,6 +1,6 @@
 config.h
 bin/ykfde
 bin/ykfde-cpio
-udev/ykfde
+bin/worker
 version.h
 *.html
