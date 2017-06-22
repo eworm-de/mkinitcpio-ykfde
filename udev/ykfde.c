@@ -178,6 +178,7 @@ static int get_response(const unsigned int serial, uint8_t slot, char * challeng
 		second_factor_len = strlen(second_factor);
 		memcpy(challenge, second_factor, second_factor_len < CHALLENGELEN / 2 ?
 				second_factor_len : CHALLENGELEN / 2);
+		memset(second_factor, 0, second_factor_len);
 		free(second_factor);
 	}
 
