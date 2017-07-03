@@ -243,28 +243,13 @@ static int add_keyring(const char * passphrase) {
 	 * Put it into session keyring first, set permissions and
 	 * move it to user keyring. */
 	if ((key = add_key("user", "cryptsetup", passphrase,
-			PASSPHRASELEN, KEY_SPEC_SESSION_KEYRING)) < 0) {
+			PASSPHRASELEN, KEY_SPEC_USER_KEYRING)) < 0) {
 		perror("add_key() failed");
 		return -1;
 	}
 
 	if (keyctl_set_timeout(key, 150) < 0) {
 		perror("keyctl_set_timeout() failed");
-		return -1;
-	}
-
-	if (keyctl_setperm(key, KEY_POS_ALL|KEY_USR_ALL) < 0) {
-		perror("keyctl_setperm() failed");
-		return -1;
-	}
-
-	if (keyctl_link(key, KEY_SPEC_USER_KEYRING) < 0) {
-		perror("keyctl_link() failed");
-		return -1;
-	}
-
-	if (keyctl_unlink(key, KEY_SPEC_SESSION_KEYRING) < 0) {
-		perror("keyctl_unlink() failed");
 		return -1;
 	}
 
