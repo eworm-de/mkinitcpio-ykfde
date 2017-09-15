@@ -13,4 +13,5 @@ After=ykfde-2f.service
 
 [Service]
 Type=oneshot
+KeyringMode=shared
 ExecStart=/usr/lib/ykfde/worker

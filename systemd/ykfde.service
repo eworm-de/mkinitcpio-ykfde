@@ -3,6 +3,7 @@ Description=Yubikey full disk encryption
 
 [Service]
 Type=oneshot
+KeyringMode=shared
 ExecStart=-/usr/bin/ykfde
 ExecStart=/usr/bin/ykfde-cpio
 ExecStop=/usr/bin/ykfde-cpio
