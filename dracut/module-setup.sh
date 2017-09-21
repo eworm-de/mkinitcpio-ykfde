@@ -25,8 +25,6 @@ install() {
 		inst_simple /usr/lib/systemd/system/ykfde-2f.service
 		ln_r $systemdsystemunitdir/ykfde-2f.service $systemdsystemunitdir/sysinit.target.wants/ykfde-2f.service
 		inst_simple /usr/bin/systemd-ask-password
-		inst_simple /usr/bin/pkill
-		inst_simple /usr/bin/sleep
 
 	fi
 

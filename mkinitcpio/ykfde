@@ -14,8 +14,6 @@ build() {
 		add_systemd_unit ykfde-2f.service
 		add_symlink /usr/lib/systemd/system/sysinit.target.wants/ykfde-2f.service ../ykfde-2f.service
 		add_binary systemd-ask-password
-		add_binary pkill
-		add_binary sleep
 	fi
 }
 
