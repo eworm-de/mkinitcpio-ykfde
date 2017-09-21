@@ -5,14 +5,14 @@ build() {
 	add_binary /usr/lib/ykfde/worker
 	add_file /usr/lib/initcpio/udev/20-ykfde.rules /usr/lib/udev/rules.d/20-ykfde.rules
 	add_file /etc/ykfde.conf
+	add_systemd_unit ykfde-worker.service
+	add_symlink /usr/lib/systemd/system/sysinit.target.wants/ykfde-worker.service ../ykfde-worker.service
 
 	# this is required for second factor
 	if egrep -qi 'second factor = (yes|true|1)' /etc/ykfde.conf; then
 		add_systemd_unit cryptsetup-pre.target
 		add_systemd_unit ykfde-2f.service
 		add_symlink /usr/lib/systemd/system/sysinit.target.wants/ykfde-2f.service ../ykfde-2f.service
-		add_systemd_unit ykfde-worker.service
-		add_symlink /usr/lib/systemd/system/sysinit.target.wants/ykfde-worker.service ../ykfde-worker.service
 		add_binary systemd-ask-password
 		add_binary pkill
 		add_binary sleep
