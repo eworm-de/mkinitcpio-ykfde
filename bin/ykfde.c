@@ -18,6 +18,8 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include <systemd/sd-daemon.h>
+
 #include <iniparser.h>
 
 #include <keyutils.h>
@@ -106,7 +108,7 @@ int main(int argc, char **argv) {
 		response_new[RESPONSELEN],
 		passphrase_old[PASSPHRASELEN + 1],
 		passphrase_new[PASSPHRASELEN + 1];
-		const char * tmp;
+	const char * tmp;
 	char challengefilename[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 1],
 		challengefiletmpname[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 7 /* -XXXXXX */ + 1];
 	int challengefile = 0, challengefiletmp = 0;
@@ -122,7 +124,7 @@ int main(int argc, char **argv) {
 	crypt_keyslot_info cryptkeyslot;
 	char * passphrase = NULL;
 	/* keyutils */
-	key_serial_t key;
+	key_serial_t key = -1;
 	void * payload = NULL;
 	char * second_factor = NULL, * new_2nd_factor = NULL, * new_2nd_factor_verify = NULL;
 	/* yubikey */
@@ -262,26 +264,35 @@ int main(int argc, char **argv) {
 		goto out40;
 	}
 
-	if (second_factor == NULL) {
-		/* get second factor from key store */
-		if ((key = keyctl_search(KEY_SPEC_USER_KEYRING, "user", "ykfde-2f", 0)) < 0)
+	/* try to get a second factor */
+	if (iniparser_getboolean(ini, "general:" CONF2NDFACTOR, 0) > 0 &&
+			second_factor == NULL && new_2nd_factor == NULL) {
+		if (sd_notify(0, "STATUS=0") == 0)
+			fprintf(stderr, "Not running from systemd, you may have to give\n"
+					"second factor manually if required.\n");
+		else if ((key = keyctl_search(KEY_SPEC_USER_KEYRING, "user", "ykfde-2f", 0)) < 0)
+			/* get second factor from key store */
 			fprintf(stderr, "Failed requesting key. That's ok if you do not use\n"
 					"second factor. Give it manually if required.\n");
 
+		/* if we have a key id we have a key - so this should succeed */
 		if (key > -1) {
-			/* if we have a key id we have a key - so this should succeed */
 			if (keyctl_read_alloc(key, &payload) < 0) {
 				perror("Failed reading payload from key");
 				goto out40;
 			}
 			second_factor = payload;
-		} else
+		}
+
+		/* use an empty string if second_factor is still NULL */
+		if (second_factor == NULL)
 			second_factor = strdup("");
 	}
 
 	/* warn when second factor is not enabled in config */
-	if ((*second_factor != 0 || new_2nd_factor != NULL) &&
-			iniparser_getboolean(ini, "general:" CONF2NDFACTOR, 0) == 0)
+	if (iniparser_getboolean(ini, "general:" CONF2NDFACTOR, 0) == 0 &&
+			((second_factor != NULL && *second_factor != 0) ||
+			 (new_2nd_factor != NULL && *new_2nd_factor != 0)))
 		fprintf(stderr, "Warning: Processing second factor, but not enabled in config!\n");
 
 	/* get random number and limit to printable ASCII character (32 to 126) */
