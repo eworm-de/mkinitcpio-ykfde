@@ -4,15 +4,17 @@ INSTALL	:= install
 RM	:= rm
 # flags
 CFLAGS	+= -std=gnu11 -O2 -fPIC -Wall -Werror
+CFLAGS	+= -liniparser -lkeyutils -lykpers-1 -lyubikey
+CFLAGS	+= $(shell pkg-config --cflags --libs libsystemd 2>/dev/null)
 LDFLAGS	+= -Wl,-z,now -Wl,-z,relro -pie
 
 all: worker ykfde ykfde-cpio
 
 worker: worker.c ../config.h
-	$(CC) $(CFLAGS) -liniparser -lkeyutils -lykpers-1 -lyubikey $(LDFLAGS) -o worker worker.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o worker worker.c
 
 ykfde: ykfde.c ../config.h ../version.h
-	$(CC) $(CFLAGS) -lcryptsetup -liniparser -lkeyutils -lykpers-1 -lyubikey $(LDFLAGS) -o ykfde ykfde.c
+	$(CC) $(CFLAGS) -lcryptsetup $(LDFLAGS) -o ykfde ykfde.c
 
 ykfde-cpio: ykfde-cpio.c ../config.h ../version.h
 	$(CC) $(CFLAGS) -larchive $(LDFLAGS) -o ykfde-cpio ykfde-cpio.c

@@ -26,6 +26,8 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include <systemd/sd-daemon.h>
+
 #include <iniparser.h>
 
 #include <keyutils.h>
@@ -350,6 +352,12 @@ int main(int argc, char **argv) {
 	(void) tmp;
 #endif
 
+	/* check that we are running from systemd */
+	if (sd_notify(0, "READY=0\nSTATUS=Work in progress...") <= 0) {
+		fprintf(stderr, "This is expected to run from a systemd service.\n");
+		goto out10;
+	}
+
 	/* initialize static memory */
 	memset(challenge, 0, CHALLENGELEN + 1);
 	memset(passphrase, 0, PASSPHRASELEN + 2);
@@ -386,6 +394,9 @@ int main(int argc, char **argv) {
 
 	if ((rc = walk_askpass(passphrase)) < 0)
 		goto out30;
+
+	/* notify systemd about success */
+	sd_notify(0, "READY=1\nSTATUS=All done.");
 
 out30:
 	/* release Yubikey */
