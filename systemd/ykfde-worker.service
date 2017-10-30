@@ -11,6 +11,6 @@ Wants=cryptsetup-pre.target
 After=ykfde-2f.service
 
 [Service]
-Type=oneshot
+Type=notify
 KeyringMode=shared
 ExecStart=/usr/lib/ykfde/worker
