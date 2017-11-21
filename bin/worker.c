@@ -395,9 +395,6 @@ int main(int argc, char **argv) {
 	if ((rc = walk_askpass(passphrase)) < 0)
 		goto out30;
 
-	/* notify systemd about success */
-	sd_notify(0, "READY=1\nSTATUS=All done.");
-
 out30:
 	/* release Yubikey */
 	if (yk_release() == 0)
@@ -407,6 +404,11 @@ out10:
 	/* wipe challenge from memory */
 	memset(challenge, 0, CHALLENGELEN + 1);
 	memset(passphrase, 0, PASSPHRASELEN + 2);
+
+	/* notify systemd that we are ready
+	   This does not indicate whether or not we are successful, but prevents
+	   systemd from reporting: Failed with result 'protocol'. */
+	sd_notify(0, "READY=1\nSTATUS=All done.");
 
 	return rc;
 }
