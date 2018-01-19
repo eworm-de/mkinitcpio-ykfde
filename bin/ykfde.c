@@ -283,11 +283,11 @@ int main(int argc, char **argv) {
 			}
 			second_factor = payload;
 		}
-
-		/* use an empty string if second_factor is still NULL */
-		if (second_factor == NULL)
-			second_factor = strdup("");
 	}
+
+	/* use an empty string if second_factor is still NULL */
+	if (second_factor == NULL)
+		second_factor = strdup("");
 
 	/* warn when second factor is not enabled in config */
 	if (iniparser_getboolean(ini, "general:" CONF2NDFACTOR, 0) == 0 &&
