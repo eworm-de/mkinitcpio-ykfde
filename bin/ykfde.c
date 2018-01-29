@@ -267,7 +267,7 @@ int main(int argc, char **argv) {
 	/* try to get a second factor */
 	if (iniparser_getboolean(ini, "general:" CONF2NDFACTOR, 0) > 0 &&
 			second_factor == NULL && new_2nd_factor == NULL) {
-		if (sd_notify(0, "STATUS=0") == 0)
+		if (sd_notify(0, "READY=0\nSTATUS=Detecting systemd...") == 0)
 			fprintf(stderr, "Not running from systemd, you may have to give\n"
 					"second factor manually if required.\n");
 		else if ((key = keyctl_search(KEY_SPEC_USER_KEYRING, "user", "ykfde-2f", 0)) < 0)
@@ -404,6 +404,8 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "Failed to rename new challenge file.\n");
 		goto out60;
 	}
+
+	sd_notify(0, "READY=1\nSTATUS=All done.");
 
 	rc = EXIT_SUCCESS;
 
