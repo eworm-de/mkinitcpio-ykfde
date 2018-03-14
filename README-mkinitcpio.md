@@ -127,12 +127,16 @@ Now rebuild your initramfs with:
 
 ### Boot loader
 
-Update your `grub` configuration by running:
+Make sure to load the cpio archive `/boot/ykfde-challenges.img`
+as an additional initramfs.
+
+With `grub` you need to list `ykfde-challenges.img` in configuration
+variable `GRUB_EARLY_INITRD_LINUX_CUSTOM` in `/etc/default/grub`:
+
+> GRUB_EARLY_INITRD_LINUX_CUSTOM="ykfde-challenges.img"
+
+Then update your `grub` configuration by running:
 
 > grub-mkconfig -o /boot/grub/grub.cfg
-
-This will add new boot entry that loads the challenges. With other boot
-loaders make sure to load the cpio archive `/boot/ykfde-challenges.img`
-as an additional initramfs.
 
 Reboot and have fun!
