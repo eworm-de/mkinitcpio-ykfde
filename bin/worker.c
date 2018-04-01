@@ -63,7 +63,7 @@ static int send_on_socket(int fd, const char *socket_name, const void *packet, s
 		.un.sun_family = AF_UNIX,
 	};
 
-	strncpy(sa.un.sun_path, socket_name, sizeof(sa.un.sun_path));
+	memcpy(sa.un.sun_path, socket_name, sizeof(sa.un.sun_path));
 
 	if (sendto(fd, packet, size, MSG_NOSIGNAL, &sa.sa, offsetof(struct sockaddr_un, sun_path) + strlen(socket_name)) < 0) {
 		perror("sendto() failed");
