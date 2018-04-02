@@ -117,7 +117,9 @@ int main(int argc, char **argv) {
 	size_t len;
 	int8_t rc = EXIT_FAILURE;
 	/* cryptsetup */
-	const char * device_name;
+	const char * device_name_config;
+	char * device_names[5]; // magic number - store up to 5 devices
+	int device_num = -1;
 	int8_t luks_slot = -1;
 	struct crypt_device *cryptdevice;
 	crypt_status_info cryptstatus;
@@ -214,11 +216,28 @@ int main(int argc, char **argv) {
 		goto out10;
 	}
 
-	if ((device_name = iniparser_getstring(ini, "general:" CONFDEVNAME, NULL)) == NULL) {
+	device_name_config = iniparser_getstring(ini, "general:" CONFDEVNAME, NULL);
+	if (device_name_config  == NULL) {
 		/* read from crypttab? */
 		/* get device from currently open devices? */
 		fprintf(stderr, "Could not read LUKS device from configuration file.\n");
 		goto out20;
+	} else {
+		/* split if multiple devices */
+		char *device = strtok((char *)device_name_config, " ");
+
+		device_num = 0;
+
+		while (device != NULL)
+		{
+			fprintf(stdout, "loaded device: %s \n", device);
+			char *ptr = malloc(strlen(device)+1);
+			ptr = device;
+
+			device_names[device_num++] = ptr;
+			device = strtok (NULL, " ");
+		}
+
 	}
 
 	/* init and open first Yubikey */
@@ -330,74 +349,79 @@ int main(int argc, char **argv) {
 	}
 	yubikey_hex_encode((char *) passphrase_new, (char *) response_new, SHA1_DIGEST_SIZE);
 
-	/* get status of crypt device
-	 * We expect this to be active (or busy). It is the actual root device, no? */
-	cryptstatus = crypt_status(cryptdevice, device_name);
-	if (cryptstatus != CRYPT_ACTIVE && cryptstatus != CRYPT_BUSY) {
-		fprintf(stderr, "Device %s is invalid or inactive.\n", device_name);
-		goto out50;
+	/* loop over all devices */
+	for(i = 0; i < device_num; i++) {
+
+		/* get status of crypt device
+		 * We expect this to be active (or busy). It is the actual root device, no? */
+		cryptstatus = crypt_status(cryptdevice, device_names[i]);
+		if (cryptstatus != CRYPT_ACTIVE && cryptstatus != CRYPT_BUSY) {
+			fprintf(stderr, "Device %s is invalid or inactive.\n", device_names[i]);
+			goto out50;
+		}
+
+		/* initialize crypt device */
+		if (crypt_init_by_name(&cryptdevice, device_names[i]) < 0) {
+			fprintf(stderr, "Device %s failed to initialize.\n", device_names[i]);
+			goto out60;
+		}
+
+		cryptkeyslot = crypt_keyslot_status(cryptdevice, luks_slot);
+
+		if (cryptkeyslot == CRYPT_SLOT_INVALID) {
+			fprintf(stderr, "Key slot %d is invalid.\n", luks_slot);
+			goto out60;
+		} else if (cryptkeyslot == CRYPT_SLOT_ACTIVE || cryptkeyslot == CRYPT_SLOT_ACTIVE_LAST) {
+			/* read challenge from file */
+			if ((challengefile = open(challengefilename, O_RDONLY)) < 0) {
+				perror("Failed opening challenge file for reading");
+				goto out60;
+			}
+
+			if (read(challengefile, challenge_old, CHALLENGELEN) < 0) {
+				perror("Failed reading challenge from file");
+				goto out60;
+			}
+
+			challengefile = close(challengefile);
+			/* finished reading challenge */
+
+			/* copy the second factor */
+			len = strlen(second_factor);
+			memcpy(challenge_old, second_factor, len < MAX2FLEN ? len : MAX2FLEN);
+
+			/* do challenge/response and encode to hex */
+			if (yk_challenge_response(yk, yk_slot, true,
+					CHALLENGELEN, (unsigned char *) challenge_old,
+					RESPONSELEN, (unsigned char *) response_old) == 0) {
+				perror("yk_challenge_response() failed");
+				goto out60;
+			}
+			yubikey_hex_encode((char *) passphrase_old, (char *) response_old, SHA1_DIGEST_SIZE);
+
+			if (crypt_keyslot_change_by_passphrase(cryptdevice, luks_slot, luks_slot,
+					passphrase_old, PASSPHRASELEN,
+					passphrase_new, PASSPHRASELEN) < 0) {
+				fprintf(stderr, "Could not update passphrase for %s in key slot %d.\n", device_names[i], luks_slot);
+				goto out60;
+			}
+
+		} else { /* ck == CRYPT_SLOT_INACTIVE */
+			if ((passphrase = ask_secret("existing LUKS passphrase")) == NULL)
+				goto out60;
+
+			if (crypt_keyslot_add_by_passphrase(cryptdevice, luks_slot,
+					passphrase, strlen(passphrase),
+					passphrase_new, PASSPHRASELEN) < 0) {
+				fprintf(stderr, "Could not add passphrase for %s in key slot %d.\n", device_names[i], luks_slot);
+				goto out60;
+			}
+		}
 	}
 
-	/* initialize crypt device */
-	if (crypt_init_by_name(&cryptdevice, device_name) < 0) {
-		fprintf(stderr, "Device %s failed to initialize.\n", device_name);
+	if (unlink(challengefilename) < 0) {
+		fprintf(stderr, "Failed to delete old challenge file.\n");
 		goto out60;
-	}
-
-	cryptkeyslot = crypt_keyslot_status(cryptdevice, luks_slot);
-
-	if (cryptkeyslot == CRYPT_SLOT_INVALID) {
-		fprintf(stderr, "Key slot %d is invalid.\n", luks_slot);
-		goto out60;
-	} else if (cryptkeyslot == CRYPT_SLOT_ACTIVE || cryptkeyslot == CRYPT_SLOT_ACTIVE_LAST) {
-		/* read challenge from file */
-		if ((challengefile = open(challengefilename, O_RDONLY)) < 0) {
-			perror("Failed opening challenge file for reading");
-			goto out60;
-		}
-
-		if (read(challengefile, challenge_old, CHALLENGELEN) < 0) {
-			perror("Failed reading challenge from file");
-			goto out60;
-		}
-
-		challengefile = close(challengefile);
-		/* finished reading challenge */
-
-		/* copy the second factor */
-		len = strlen(second_factor);
-		memcpy(challenge_old, second_factor, len < MAX2FLEN ? len : MAX2FLEN);
-
-		/* do challenge/response and encode to hex */
-		if (yk_challenge_response(yk, yk_slot, true,
-				CHALLENGELEN, (unsigned char *) challenge_old,
-				RESPONSELEN, (unsigned char *) response_old) == 0) {
-			perror("yk_challenge_response() failed");
-			goto out60;
-		}
-		yubikey_hex_encode((char *) passphrase_old, (char *) response_old, SHA1_DIGEST_SIZE);
-
-		if (crypt_keyslot_change_by_passphrase(cryptdevice, luks_slot, luks_slot,
-				passphrase_old, PASSPHRASELEN,
-				passphrase_new, PASSPHRASELEN) < 0) {
-			fprintf(stderr, "Could not update passphrase for key slot %d.\n", luks_slot);
-			goto out60;
-		}
-
-		if (unlink(challengefilename) < 0) {
-			fprintf(stderr, "Failed to delete old challenge file.\n");
-			goto out60;
-		}
-	} else { /* ck == CRYPT_SLOT_INACTIVE */
-		if ((passphrase = ask_secret("existing LUKS passphrase")) == NULL)
-			goto out60;
-
-		if (crypt_keyslot_add_by_passphrase(cryptdevice, luks_slot,
-				passphrase, strlen(passphrase),
-				passphrase_new, PASSPHRASELEN) < 0) {
-			fprintf(stderr, "Could not add passphrase for key slot %d.\n", luks_slot);
-			goto out60;
-		}
 	}
 
 	if (rename(challengefiletmpname, challengefilename) < 0) {
