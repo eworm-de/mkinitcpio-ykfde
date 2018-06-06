@@ -72,3 +72,4 @@ release:
 	gpg -ab mkinitcpio-ykfde-$(VERSION).tar.xz
 	git archive --format=tar.gz --prefix=mkinitcpio-ykfde-$(VERSION)/ $(VERSION) > mkinitcpio-ykfde-$(VERSION).tar.gz
 	gpg -ab mkinitcpio-ykfde-$(VERSION).tar.gz
+	git notes --ref=refs/notes/signatures/tar add -C $$(git archive --format=tar --prefix=mkinitcpio-ykfde-$(VERSION)/ $(VERSION) | gpg --armor --detach-sign | git hash-object -w --stdin) $(VERSION)
