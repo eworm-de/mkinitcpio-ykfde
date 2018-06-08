@@ -4,3 +4,7 @@ bin/ykfde-cpio
 bin/worker
 version.h
 *.html
+mkinitcpio-ykfde-*.tar.gz
+mkinitcpio-ykfde-*.tar.gz.asc
+mkinitcpio-ykfde-*.tar.xz
+mkinitcpio-ykfde-*.tar.xz.asc
