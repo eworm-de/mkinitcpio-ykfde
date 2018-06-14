@@ -10,13 +10,13 @@ Requirements
 To compile and use Yubikey full disk encryption you need:
 
 * [yubikey-personalization](https://github.com/Yubico/yubikey-personalization)
-* [iniparser](http://ndevilla.free.fr/iniparser/)
-* [systemd](http://www.freedesktop.org/wiki/Software/systemd/)
-* [cryptsetup](http://code.google.com/p/cryptsetup/)
+* [iniparser](https://github.com/ndevilla/iniparser)
+* [systemd](https://www.github.com/systemd/systemd)
+* [cryptsetup](https://gitlab.com/cryptsetup/cryptsetup)
 * keyutils and linux with `CONFIG_KEYS` enabled
 * [mkinitcpio](https://projects.archlinux.org/mkinitcpio.git/)
-* [markdown](http://daringfireball.net/projects/markdown/) (HTML documentation)
-* [libarchive](http://www.libarchive.org/) (Update challenge on boot)
+* [markdown](https://daringfireball.net/projects/markdown/) (HTML documentation)
+* [libarchive](https://www.libarchive.org/) (Update challenge on boot)
 
 Additionally you will need to have `make` and `pkg-config` installed to
 successfully compile.
