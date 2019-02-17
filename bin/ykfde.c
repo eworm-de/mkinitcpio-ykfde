@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
+#include <sys/random.h>
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
 	char challengefilename[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 1],
 		challengefiletmpname[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 7 /* -XXXXXX */ + 1];
 	int challengefile = 0, challengefiletmp = 0;
-	struct timeval tv;
+	unsigned int seed;
 	int i;
 	size_t len;
 	int8_t rc = EXIT_FAILURE;
@@ -196,10 +196,12 @@ int main(int argc, char **argv) {
 	if (version > 0 || help > 0)
 		return EXIT_SUCCESS;
 
-
 	/* initialize random seed */
-	gettimeofday(&tv, NULL);
-	srand(tv.tv_usec * tv.tv_sec);
+	if (getrandom(&seed, 4, GRND_RANDOM) != 4) {
+		fprintf(stderr, "Initializing random seed failed.\n");
+		goto out10;
+	}
+	srand(seed);
 
 	/* initialize static buffers */
 	memset(challenge_old, 0, CHALLENGELEN + 1);
