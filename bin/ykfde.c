@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
 		return EXIT_SUCCESS;
 
 	/* initialize random seed */
-	if (getrandom(&seed, 4, GRND_RANDOM) != 4) {
+	if (getentropy(&seed, 4) != 0) {
 		fprintf(stderr, "Initializing random seed failed.\n");
 		goto out10;
 	}
