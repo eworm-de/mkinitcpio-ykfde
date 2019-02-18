@@ -101,7 +101,7 @@ char * ask_secret(const char * text) {
 }
 
 int main(int argc, char **argv) {
-	unsigned int version = 0, help = 0;
+	unsigned int version = 0, help = 0, challenge_int[CHALLENGELEN];
 	char challenge_old[CHALLENGELEN + 1],
 		challenge_new[CHALLENGELEN + 1],
 		response_old[RESPONSELEN],
@@ -112,7 +112,6 @@ int main(int argc, char **argv) {
 	char challengefilename[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 1],
 		challengefiletmpname[sizeof(CHALLENGEDIR) + 11 /* "/challenge-" */ + 10 /* unsigned int in char */ + 7 /* -XXXXXX */ + 1];
 	int challengefile = 0, challengefiletmp = 0;
-	unsigned int seed;
 	int i;
 	size_t len;
 	int8_t rc = EXIT_FAILURE;
@@ -196,14 +195,8 @@ int main(int argc, char **argv) {
 	if (version > 0 || help > 0)
 		return EXIT_SUCCESS;
 
-	/* initialize random seed */
-	if (getentropy(&seed, sizeof(unsigned int)) != 0) {
-		fprintf(stderr, "Initializing random seed failed.\n");
-		goto out10;
-	}
-	srand(seed);
-
 	/* initialize static buffers */
+	memset(challenge_int, 0, CHALLENGELEN * sizeof(unsigned int));
 	memset(challenge_old, 0, CHALLENGELEN + 1);
 	memset(challenge_new, 0, CHALLENGELEN + 1);
 	memset(response_old, 0, RESPONSELEN);
@@ -297,9 +290,13 @@ int main(int argc, char **argv) {
 			 (new_2nd_factor != NULL && *new_2nd_factor != 0)))
 		fprintf(stderr, "Warning: Processing second factor, but not enabled in config!\n");
 
-	/* get random number and limit to printable ASCII character (32 to 126) */
-	for(i = 0; i < CHALLENGELEN; i++)
-		challenge_new[i] = (rand() % (126 - 32)) + 32;
+	/* get random number - try random first, fall back to urandom
+	   We generate an array of unsigned int, the use modulo to limit to printable
+	   ASCII characters (32 to 127). */
+	if ((len = getrandom(challenge_int, CHALLENGELEN * sizeof(unsigned int), GRND_RANDOM|GRND_NONBLOCK)) != CHALLENGELEN * sizeof(unsigned int))
+		getrandom((void *)((size_t)challenge_int + len), CHALLENGELEN * sizeof(unsigned int) - len, 0);
+	for (i = 0; i < CHALLENGELEN; i++)
+		challenge_new[i] = (challenge_int[i] % (127 - 32)) + 32;
 
 	/* these are the filenames for challenge
 	 * we need this for reading and writing */
@@ -441,6 +438,7 @@ out20:
 out10:
 	/* wipe response (cleartext password!) from memory */
 	/* This is statically allocated and always save to wipe! */
+	memset(challenge_int, 0, CHALLENGELEN * sizeof(unsigned int));
 	memset(challenge_old, 0, CHALLENGELEN + 1);
 	memset(challenge_new, 0, CHALLENGELEN + 1);
 	memset(response_old, 0, RESPONSELEN);
