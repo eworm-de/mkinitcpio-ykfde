@@ -54,8 +54,9 @@ adding a line to `/etc/crypttab`. It should read like:
 Usually there is already an entry for your device.
 
 Update `/etc/ykfde.conf` with correct settings. Add the value of
-`mapping-name` from above to `device name` in the `general` section. Then
-add a new section with your key's decimal serial number containing the key
+`mapping-name` from above to `device name` in the `general` section.   
+If you have multiple devices add them separated by spaces.   
+Then add a new section with your key's decimal serial number containing the key
 slot setting. The minimal file should look like this:
 
     [general]
