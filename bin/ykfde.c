@@ -8,6 +8,8 @@
  * $ gcc -o ykfde ykfde.c -lcryptsetup -liniparser -lkeyutils -lykpers-1 -lyubikey
  */
 
+#define _GNU_SOURCE
+
 #include <fcntl.h>
 #include <getopt.h>
 #include <stdio.h>
@@ -387,7 +389,12 @@ int main(int argc, char **argv) {
 			goto out60;
 		}
 
-		if (unlink(challengefilename) < 0) {
+		if (renameat2(AT_FDCWD, challengefiletmpname, AT_FDCWD, challengefilename, RENAME_EXCHANGE) < 0) {
+			fprintf(stderr, "Failed to rename (exchange) challenge files.\n");
+			goto out60;
+		}
+
+		if (unlink(challengefiletmpname) < 0) {
 			fprintf(stderr, "Failed to delete old challenge file.\n");
 			goto out60;
 		}
@@ -401,11 +408,11 @@ int main(int argc, char **argv) {
 			fprintf(stderr, "Could not add passphrase for key slot %d.\n", luks_slot);
 			goto out60;
 		}
-	}
 
-	if (rename(challengefiletmpname, challengefilename) < 0) {
-		fprintf(stderr, "Failed to rename new challenge file.\n");
-		goto out60;
+		if (rename(challengefiletmpname, challengefilename) < 0) {
+			fprintf(stderr, "Failed to rename new challenge file.\n");
+			goto out60;
+		}
 	}
 
 	sd_notify(0, "READY=1\nSTATUS=All done.");
