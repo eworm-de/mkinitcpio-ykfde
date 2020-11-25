@@ -21,7 +21,7 @@ bin/ykfde: bin/ykfde.c config.h version.h
 bin/ykfde-cpio: bin/ykfde-cpio.c config.h version.h
 	$(MAKE) -C bin ykfde-cpio
 
-config.h: config.def.h
+config.h:
 	$(CP) config.def.h config.h
 
 version.h: $(wildcard .git/HEAD .git/index .git/refs/tags/*) Makefile
