@@ -312,6 +312,10 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "Failed to write challenge to file.\n");
 		goto out50;
 	}
+	if (fsync(challengefiletmp) < 0) {
+		fprintf(stderr, "Failed to sync file to disk.\n");
+		goto out50;
+	}
 	challengefiletmp = close(challengefiletmp);
 
 	/* now that the new challenge has been written to file...
