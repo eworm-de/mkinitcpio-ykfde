@@ -1,7 +1,9 @@
 # (C) 2016-2020 by Christian Hesse <mail@eworm.de>
 #
-# This software may be used and distributed according to the terms
-# of the GNU General Public License, incorporated herein by reference.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 
 [Unit]
 Description=Get 2nd Factor for YKFDE
