@@ -11,13 +11,13 @@ LDFLAGS		+= -Wl,-z,now -Wl,-z,relro -pie
 all: worker ykfde ykfde-cpio
 
 worker: worker.c ../config.h
-	$(CC) $(CFLAGS) $(CFLAGS_YUBIKEY) $(CFLAGS_SYSTEMD) $(LDFLAGS) -o worker worker.c
+	$(CC) worker.c $(CFLAGS) $(CFLAGS_YUBIKEY) $(CFLAGS_SYSTEMD) $(LDFLAGS) -o worker
 
 ykfde: ykfde.c ../config.h ../version.h
-	$(CC) $(CFLAGS) $(CFLAGS_YUBIKEY) $(CFLAGS_SYSTEMD) -lcryptsetup $(LDFLAGS) -o ykfde ykfde.c
+	$(CC) ykfde.c $(CFLAGS) $(CFLAGS_YUBIKEY) $(CFLAGS_SYSTEMD) -lcryptsetup $(LDFLAGS) -o ykfde
 
 ykfde-cpio: ykfde-cpio.c ../config.h ../version.h
-	$(CC) $(CFLAGS) -larchive $(LDFLAGS) -o ykfde-cpio ykfde-cpio.c
+	$(CC) ykfde-cpio.c $(CFLAGS) -larchive $(LDFLAGS) -o ykfde-cpio
 
 install: worker ykfde ykfde-cpio
 	$(INSTALL) -D -m0755 worker $(DESTDIR)/usr/lib/ykfde/worker
