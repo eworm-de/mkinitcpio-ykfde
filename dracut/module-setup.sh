@@ -17,6 +17,10 @@ install() {
 	inst_simple /usr/lib/ykfde/worker
 	inst_simple /etc/ykfde.conf
 	inst_simple /usr/lib/systemd/system/ykfde-worker.service
+	inst_libdir_file libiniparser.so.1
+        inst_libdir_file libykpers-1.so.1
+        inst_libdir_file libyubikey.so.0
+	inst_libdir_file libkeyutils.so.1
 	ln_r $systemdsystemunitdir/ykfde-worker.service $systemdsystemunitdir/sysinit.target.wants/ykfde-worker.service
 
 	# this is required for second factor
