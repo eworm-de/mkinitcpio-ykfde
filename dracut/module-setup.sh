@@ -14,7 +14,7 @@ install() {
 	inst_rules "$moddir/20-ykfde.rules"
 	inst_hook cmdline 30 "$moddir/parse-mod.sh"
 	inst_simple "$moddir/ykfde.sh" /sbin/ykfde.sh
-	inst_simple /usr/lib/ykfde/worker
+	inst_binary /usr/lib/ykfde/worker
 	inst_simple /etc/ykfde.conf
 	inst_simple /usr/lib/systemd/system/ykfde-worker.service
 	ln_r $systemdsystemunitdir/ykfde-worker.service $systemdsystemunitdir/sysinit.target.wants/ykfde-worker.service
@@ -24,8 +24,7 @@ install() {
 		inst_simple /usr/lib/systemd/system/cryptsetup-pre.target
 		inst_simple /usr/lib/systemd/system/ykfde-2f.service
 		ln_r $systemdsystemunitdir/ykfde-2f.service $systemdsystemunitdir/sysinit.target.wants/ykfde-2f.service
-		inst_simple /usr/bin/systemd-ask-password
-
+		inst_binary /usr/bin/systemd-ask-password
 	fi
 
 	dracut_need_initqueue
