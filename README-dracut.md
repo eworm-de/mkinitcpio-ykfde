@@ -124,7 +124,8 @@ Build the initramfs:
 ### Boot loader
 
 Make sure to load the cpio archive `/boot/ykfde-challenges.img`
-as an additional initramfs.
+as an additional initramfs. It has to be listed *after* microcode
+updates (if available), but *before* main initramfs.
 
 With `grub` you need to list `ykfde-challenges.img` in configuration
 variable `GRUB_EARLY_INITRD_LINUX_CUSTOM` in `/etc/default/grub`:
