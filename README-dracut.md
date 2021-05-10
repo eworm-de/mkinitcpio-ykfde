@@ -136,4 +136,16 @@ Then update your `grub` configuration by running:
 
 > grub-mkconfig -o /boot/grub/grub.cfg
 
+A valid configuration for `systemd-boot` should be placed in
+`/boot/loader/entries/default.conf` and look something like this:
+
+```
+title   Default
+linux   /vmlinuz-linux
+initrd  /intel-ucode.img
+initrd  /ykfde-challenges.img
+initrd  /initramfs-linux.img
+options root=... rw quiet
+```
+
 Reboot and have fun!
