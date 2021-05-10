@@ -304,7 +304,7 @@ int main(int argc, char **argv) {
 	   We generate an array of unsigned int, the use modulo to limit to printable
 	   ASCII characters (32 to 127). */
 	if ((len = getrandom(challenge_int, CHALLENGELEN * sizeof(unsigned int), GRND_RANDOM|GRND_NONBLOCK)) != CHALLENGELEN * sizeof(unsigned int))
-		getrandom((void *)((size_t)challenge_int + len), CHALLENGELEN * sizeof(unsigned int) - len, 0);
+		len += getrandom((void *)((size_t)challenge_int + len), CHALLENGELEN * sizeof(unsigned int) - len, 0);
 	for (i = 0; i < CHALLENGELEN; i++)
 		challenge_new[i] = (challenge_int[i] % (127 - 32)) + 32;
 
