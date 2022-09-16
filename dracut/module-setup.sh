@@ -20,7 +20,7 @@ install() {
 	ln_r $systemdsystemunitdir/ykfde-worker.service $systemdsystemunitdir/sysinit.target.wants/ykfde-worker.service
 
 	# this is required for second factor
-	if egrep -qi 'second factor = (yes|true|1)' /etc/ykfde.conf; then
+	if grep -E -qi 'second factor = (yes|true|1)' /etc/ykfde.conf; then
 		inst_simple /usr/lib/systemd/system/cryptsetup-pre.target
 		inst_simple /usr/lib/systemd/system/ykfde-2f.service
 		ln_r $systemdsystemunitdir/ykfde-2f.service $systemdsystemunitdir/sysinit.target.wants/ykfde-2f.service
