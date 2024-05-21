@@ -6,7 +6,7 @@ RM	:= rm
 CFLAGS		+= -std=gnu11 -O2 -fPIC -Wall -Werror
 CFLAGS_EXTRA	+= $(shell pkg-config --cflags --libs iniparser)
 CFLAGS_EXTRA	+= $(shell pkg-config --cflags --libs libkeyutils)
-CFLAGS_EXTRA	+= -lykpers-1 -lyubikey
+CFLAGS_EXTRA	+= $(shell pkg-config --cflags --libs ykpers-1) -lyubikey
 CFLAGS_SYSTEMD	:= $(shell pkg-config --cflags --libs libsystemd 2>/dev/null)
 ifneq ($(CFLAGS_SYSTEMD),)
 CFLAGS_EXTRA	+= -DHAVE_SYSTEMD $(CFLAGS_SYSTEMD)
