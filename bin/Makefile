@@ -4,7 +4,8 @@ INSTALL	:= install
 RM	:= rm
 # flags
 CFLAGS		+= -std=gnu11 -O2 -fPIC -Wall -Werror
-CFLAGS_EXTRA	+= -liniparser -lkeyutils -lykpers-1 -lyubikey
+CFLAGS_EXTRA	+= $(shell pkg-config --cflags --libs iniparser)
+CFLAGS_EXTRA	+= -lkeyutils -lykpers-1 -lyubikey
 CFLAGS_SYSTEMD	:= $(shell pkg-config --cflags --libs libsystemd 2>/dev/null)
 ifneq ($(CFLAGS_SYSTEMD),)
 CFLAGS_EXTRA	+= -DHAVE_SYSTEMD $(CFLAGS_SYSTEMD)

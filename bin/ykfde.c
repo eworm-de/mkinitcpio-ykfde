@@ -30,7 +30,7 @@
 
 #include <systemd/sd-daemon.h>
 
-#include <iniparser.h>
+#include <iniparser/iniparser.h>
 
 #include <keyutils.h>
 
