@@ -1,5 +1,5 @@
 /*
- * (C) 2014-2024 by Christian Hesse <mail@eworm.de>
+ * (C) 2014-2025 by Christian Hesse <mail@eworm.de>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
