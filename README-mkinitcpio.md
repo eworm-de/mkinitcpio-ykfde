@@ -153,3 +153,10 @@ options root=... rw quiet
 ```
 
 Reboot and have fun!
+
+If you use a [UKI](https://wiki.archlinux.org/title/Unified_kernel_image) you will need to add the img to your UKI build process. For systemd-ukify you should specify the challenges img in `/etc/kernel/uki.conf` like this:
+
+```
+[UKI]
+Initrd=/boot/initramfs-linux.img /boot/ykfde-challenges.img
+```
