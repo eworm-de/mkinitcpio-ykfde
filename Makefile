@@ -6,7 +6,8 @@ CP	:= cp
 SED	:= sed
 # this is just a fallback in case you do not use git but downloaded
 # a release tarball...
-VERSION := 0.7.9
+DISTVER := 0.7.9
+VERSION ?= $(shell git describe --long 2>/dev/null || echo $(DISTVER))
 
 .DELETE_ON_ERROR:
 
@@ -68,8 +69,8 @@ distclean: clean
 	$(RM) -f config.h
 
 release:
-	git archive --format=tar.xz --prefix=mkinitcpio-ykfde-$(VERSION)/ $(VERSION) > mkinitcpio-ykfde-$(VERSION).tar.xz
-	gpg --armor --detach-sign --comment mkinitcpio-ykfde-$(VERSION).tar.xz mkinitcpio-ykfde-$(VERSION).tar.xz
-	git archive --format=tar.gz --prefix=mkinitcpio-ykfde-$(VERSION)/ $(VERSION) > mkinitcpio-ykfde-$(VERSION).tar.gz
-	gpg --armor --detach-sign --comment mkinitcpio-ykfde-$(VERSION).tar.gz mkinitcpio-ykfde-$(VERSION).tar.gz
-	git notes --ref=refs/notes/signatures/tar add -C $$(git archive --format=tar --prefix=mkinitcpio-ykfde-$(VERSION)/ $(VERSION) | gpg --armor --detach-sign --comment mkinitcpio-ykfde-$(VERSION).tar | git hash-object -w --stdin) $(VERSION)
+	git archive --format=tar.xz --prefix=mkinitcpio-ykfde-$(DISTVER)/ $(DISTVER) > mkinitcpio-ykfde-$(DISTVER).tar.xz
+	gpg --armor --detach-sign --comment mkinitcpio-ykfde-$(DISTVER).tar.xz mkinitcpio-ykfde-$(DISTVER).tar.xz
+	git archive --format=tar.gz --prefix=mkinitcpio-ykfde-$(DISTVER)/ $(DISTVER) > mkinitcpio-ykfde-$(DISTVER).tar.gz
+	gpg --armor --detach-sign --comment mkinitcpio-ykfde-$(DISTVER).tar.gz mkinitcpio-ykfde-$(DISTVER).tar.gz
+	git notes --ref=refs/notes/signatures/tar add -C $$(git archive --format=tar --prefix=mkinitcpio-ykfde-$(DISTVER)/ $(DISTVER) | gpg --armor --detach-sign --comment mkinitcpio-ykfde-$(DISTVER).tar | git hash-object -w --stdin) $(DISTVER)
