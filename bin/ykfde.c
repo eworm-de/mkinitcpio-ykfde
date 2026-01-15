@@ -472,5 +472,3 @@ out10:
 
 	return rc;
 }
-
-// vim: set syntax=c:

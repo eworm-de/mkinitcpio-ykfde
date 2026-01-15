@@ -41,5 +41,3 @@
 #define CPIOTMPFILE	CPIOFILE "-XXXXXX"
 
 #endif /* _CONFIG_H */
-
-// vim: set syntax=c:
